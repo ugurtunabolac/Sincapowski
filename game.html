@@ -1,0 +1,2546 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
+    <title>Sincapowski: Ay Görevi - TUA Hackathon </title>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+        firebase.initializeApp({
+            apiKey: "AIzaSyCyBp1-EwuaEfNzf7qT1vrsqqtf7MHXs30",
+            authDomain: "sincapowski3.firebaseapp.com",
+            projectId: "sincapowski3",
+            storageBucket: "sincapowski3.firebasestorage.app",
+            messagingSenderId: "952280842155",
+            appId: "1:952280842155:web:a13c8b9a2ee3f6da215cee"
+        });
+        const db = firebase.firestore();
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Orbitron:wght@400;700;900&display=swap');
+        
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #010103; color: #e0f7fa; font-family: 'Rajdhani', sans-serif; user-select: none; }
+        
+        #space-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, #001133 0%, #33aaff 100%); z-index: -10; transition: background 3s ease; }
+        .stars-bg { position: absolute; top:0; left:0; width: 100%; height: 100%; background: url('https://www.transparenttextures.com/patterns/stardust.png'); opacity: 0; animation: drift 100s linear infinite; z-index: -9; transition: opacity 3s ease;}
+        @keyframes drift { from { background-position: 0 0; } to { background-position: -10000px 5000px; } }
+        
+        .scanlines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 255, 255, 0.04) 50%); background-size: 100% 4px; z-index: 50; pointer-events: none; }
+
+        .glass-panel { background: rgba(5, 15, 25, 0.75); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 255, 255, 0.1); transition: all 0.3s ease; }
+        
+        @keyframes floatUI { 0% { transform: translateY(0px); } 50% { transform: translateY(8px); } 100% { transform: translateY(0px); } }
+        #ui { position: absolute; top: 20px; left: 20px; z-index: 60; pointer-events: none; width: 340px; padding: 20px; opacity: 0; display: none;}
+        #ui.visible { opacity: 1; display: block; animation: floatUI 4s ease-in-out infinite; }
+
+        .danger-panel { border-color: rgba(255, 51, 102, 0.8) !important; animation: pulse-danger 1s infinite, floatUI 4s ease-in-out infinite !important; }
+        @keyframes pulse-danger { 0% { box-shadow: 0 0 20px rgba(255,0,0,0.2) inset; } 50% { box-shadow: 0 0 40px rgba(255,0,0,0.5) inset; } 100% { box-shadow: 0 0 20px rgba(255,0,0,0.2) inset; } }
+
+        h1 { margin: 0 0 5px 0; font-size: 26px; color: #0ff; text-shadow: 0 0 10px #0ff; font-weight: 700; letter-spacing: 2px; font-family: 'Orbitron', sans-serif;}
+        .hud-line { height: 2px; background: linear-gradient(90deg, #0ff, transparent); margin-bottom: 15px; }
+        
+        #level-text { font-size: 16px; color: #fa0; margin-bottom: 15px; font-weight: 700; letter-spacing: 1px;}
+        .stat { font-size: 16px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;}
+        .stat-val { font-family: 'Courier New', monospace; font-weight: bold; color: #fff; font-size: 18px;}
+        
+        .bar-container { width: 100%; height: 12px; background: rgba(0,0,0,0.8); margin-top: 5px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; overflow: hidden; position: relative;}
+        .bar { height: 100%; transition: width 0.1s linear; }
+        #primary-bar { background: linear-gradient(90deg, #0fa, #0ff); box-shadow: 0 0 10px #0ff; }
+        #secondary-bar { background: linear-gradient(90deg, #fa0, #f33); box-shadow: 0 0 10px #f33; }
+        
+        #drill-ui, #signal-ui { display: none; width: 100%; text-align: center; margin-top: 20px;}
+        #drill-zone, #signal-zone { position: absolute; height: 100%; background: rgba(0, 255, 100, 0.45); border-left: 2px solid #0f0; border-right: 2px solid #0f0;}
+        #drill-indicator, #signal-indicator { position: absolute; height: 18px; width: 4px; background: #fff; top: -3px; box-shadow: 0 0 10px #fff; border-radius: 2px;}
+
+        .floating-text { position: absolute; color: #0f0; font-size: 24px; font-weight: bold; text-shadow: 0 0 10px #0f0; pointer-events: none; animation: floatUp 1s forwards; z-index: 80;}
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(1.5); } }
+
+        .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.5s; }
+        .hidden { opacity: 0 !important; pointer-events: none !important; }
+        
+        #city-screen { background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop') center/cover; }
+        #boot-screen { background: rgba(0, 5, 15, 0.95); display: none; }
+        #customize-screen { background: rgba(0, 5, 15, 0.98); display: none; } 
+        
+        /* GARAJ EKRANI İÇİN FLEX YAPI */
+        .garage-layout { display: flex; gap: 40px; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; max-width: 800px; }
+        .form-container { display: flex; flex-direction: column; gap: 15px; width: 350px; text-align: center; }
+        
+        /* ÖN İZLEME PANELİ */
+        .preview-container { width: 220px; height: 300px; background: rgba(0, 15, 25, 0.8); border: 2px dashed rgba(0, 255, 255, 0.4); border-radius: 12px; display: flex; flex-direction: column; align-items: center; position: relative; box-shadow: inset 0 0 20px rgba(0,0,0,0.8);}
+        .preview-title { position: absolute; top: 15px; color: #0fa; font-family: 'Orbitron', sans-serif; font-size: 14px; letter-spacing: 2px;}
+        
+        input[type="text"], select { background: rgba(0,0,0,0.6); border: 2px solid #0ff; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 18px; padding: 12px; border-radius: 8px; outline: none; text-align: center; touch-action: manipulation;}
+        input:focus, select:focus { box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
+        option { background: #001122; color: #0ff; }
+        
+        .color-picker-group { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: rgba(0,255,255,0.05); border-radius: 8px;}
+        input[type="color"] { border: none; width: 40px; height: 40px; border-radius: 5px; cursor: pointer; background: none; padding: 0;}
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: 2px solid #0fa; border-radius: 4px; }
+        
+        #story-screen { background: rgba(0, 0, 0, 0.95); padding: 40px; text-align: center; display: none;}
+        #story-text { font-size: 22px; line-height: 1.6; color: #a0c4c4; max-width: 700px; margin-bottom: 30px; min-height: 120px;}
+
+        #transition-curtain { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 90; display: none; justify-content: center; align-items: center; transition: opacity 1s ease; opacity: 0;}
+        #transition-text { font-size: 36px; color: #0ff; letter-spacing: 4px; text-shadow: 0 0 20px #0ff; opacity: 0; transition: opacity 0.5s; font-weight: bold; font-family: 'Orbitron', sans-serif;}
+
+        #route-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 95; display: none; flex-direction: column; justify-content: center; align-items: center; }
+        #route-canvas { border: 1px solid rgba(0,255,255,0.2); border-radius: 12px; box-shadow: 0 0 40px rgba(0,255,255,0.15); max-width: 100vw; }
+
+        #message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; display: none; z-index: 70; min-width: 300px; padding: 30px;}
+        #msg-text { margin-bottom: 25px; line-height: 1.5; font-size: 20px;}
+        
+        button { position: relative; z-index: 9999; pointer-events: auto; padding: 12px 30px; font-size: 18px; font-family: 'Rajdhani', sans-serif; background: rgba(0, 255, 255, 0.1); color: #0ff; border: 2px solid #0ff; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; text-transform: uppercase; touch-action: manipulation;}
+        button:hover, button:active { background: rgba(0, 255, 255, 0.3); box-shadow: 0 0 20px rgba(0, 255, 255, 0.5); transform: scale(1.05);}
+        .leaderboard-btn { background: rgba(255, 170, 0, 0.1); color: #fa0; border-color: #fa0; margin-top: 15px;}
+        .leaderboard-btn:hover { background: rgba(255, 170, 0, 0.3); box-shadow: 0 0 20px rgba(255, 170, 0, 0.5);}
+
+        #lb-modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); z-index: 9999; display:none; justify-content:center; align-items:center; }
+        #lb-modal.show { display: flex; }
+        #lb-content { width: 90%; max-width: 500px; max-height: 80vh; overflow-y: auto; padding: 30px; border-radius: 16px; background: rgba(5, 15, 25, 0.95); border: 2px solid rgba(0,255,255,0.4); box-shadow: 0 0 60px rgba(0,255,255,0.15); }
+        #lb-content h2 { color: #0ff; font-family: 'Orbitron', sans-serif; font-size: 22px; text-align:center; margin: 0 0 5px; text-shadow: 0 0 15px #0ff; }
+        #lb-content .lb-sub { color: #a0c4c4; text-align:center; font-size: 13px; margin-bottom: 20px; }
+        .lb-row { display: flex; align-items: center; padding: 10px 12px; margin-bottom: 6px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); transition: 0.2s; }
+        .lb-row:hover { background: rgba(0,255,255,0.08); border-color: rgba(0,255,255,0.3); }
+        .lb-row.gold { background: rgba(255,170,0,0.1); border-color: rgba(255,170,0,0.4); }
+        .lb-row.silver { background: rgba(192,192,192,0.08); border-color: rgba(192,192,192,0.3); }
+        .lb-row.bronze { background: rgba(205,127,50,0.08); border-color: rgba(205,127,50,0.3); }
+        .lb-rank { width: 32px; font-family: 'Orbitron', sans-serif; font-size: 16px; font-weight: bold; color: #fa0; text-align: center; }
+        .lb-info { flex: 1; margin-left: 12px; }
+        .lb-name { color: #fff; font-weight: bold; font-size: 15px; }
+        .lb-base { color: #a0c4c4; font-size: 11px; }
+        .lb-score { color: #0ff; font-family: 'Orbitron', sans-serif; font-size: 18px; text-shadow: 0 0 8px rgba(0,255,255,0.5); }
+        .lb-empty { text-align:center; color: #666; padding: 30px; font-size: 14px; }
+        #lb-close { margin-top: 15px; width: 100%; }
+        
+        .controls-help { margin-top: 15px; font-size: 13px; color: #a0c4c4; line-height: 1.6; border-top: 1px solid rgba(0,255,255,0.2); padding-top: 10px;}
+        .key { display: inline-block; background: rgba(255,255,255,0.1); color: #0ff; padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(0,255,255,0.4); font-family: monospace;}
+        
+        #impact-flash { position: absolute; top:0; left:0; width:100%; height:100%; background: white; opacity: 0; pointer-events: none; z-index: 85; transition: opacity 0.2s; }
+        
+        canvas#game { display: block; position: absolute; top:0; left:0; z-index: 10; display: none; touch-action: none;}
+
+        #base-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 90%; height: 85%; display: none; flex-direction: column; z-index: 55; max-width: 800px;}
+        .base-header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #0fa; padding-bottom: 10px;}
+        .base-content { display: flex; justify-content: space-around; flex-wrap: wrap; height: 100%; gap: 10px;}
+        .base-panel { width: 30%; min-width: 200px; padding: 15px; border: 1px solid rgba(0,255,255,0.2); background: rgba(0,10,20,0.8); border-radius: 10px; display: flex; flex-direction: column; justify-content: space-between;}
+        .radar-box { width: 120px; height: 120px; border: 2px solid #0fa; border-radius: 50%; position: relative; overflow: hidden; background: radial-gradient(circle, #001a1a, #000); margin: 0 auto;}
+        .radar-sweep { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: linear-gradient(90deg, transparent, #0fa); transform-origin: left center; animation: radarScan 4s linear infinite;}
+        @keyframes radarScan { 0% { transform: translateY(-50%) rotate(0deg); } 100% { transform: translateY(-50%) rotate(360deg); } }
+        .sys-check { margin-top: 8px; font-family: monospace; font-size: 13px;}
+        .sys-bar { width: 100%; height: 8px; background: #222; margin-top: 4px; margin-bottom: 8px; border-radius: 4px; overflow: hidden;}
+        .sys-fill { height: 100%; background: linear-gradient(90deg, #0fa, #0ff); width: 0%; transition: width 0.6s ease;}
+        .star-rating { font-size: 36px; letter-spacing: 5px; margin-top: 10px; text-shadow: 0 0 15px gold;}
+
+        #speed-hud { position: absolute; bottom: 30px; right: 30px; z-index: 65; pointer-events: none; display: none; padding: 15px 25px; text-align: center; }
+        #speed-hud .spd-val { font-family: 'Orbitron', sans-serif; font-size: 48px; color: #0ff; text-shadow: 0 0 20px #0ff; line-height: 1; }
+        #speed-hud .spd-label { font-size: 13px; color: #a0c4c4; letter-spacing: 3px; }
+        #speed-hud .dash-bar { width: 120px; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin: 8px auto 0; }
+        #speed-hud .dash-fill { height: 100%; background: linear-gradient(90deg, #fa0, #f33); border-radius: 3px; transition: width 0.1s; }
+        #combo-hud { position: absolute; top: 30px; right: 30px; z-index: 65; pointer-events: none; display: none; padding: 10px 20px; text-align: center; }
+        #combo-hud .combo-val { font-family: 'Orbitron', sans-serif; font-size: 36px; color: #fa0; text-shadow: 0 0 15px #fa0; }
+
+        /* DETAYLI ALPER GEZERAVCI PIXEL ART SVG */
+        #alper-comms { position: absolute; top: 120px; right: 20px; width: 450px; max-width: 90vw; background: rgba(0, 10, 20, 0.95); border: 2px solid #0fa; border-radius: 10px; z-index: 80; display: none; align-items: center; box-shadow: 0 0 30px rgba(0, 255, 255, 0.2); overflow: hidden;}
+        .alper-avatar { width: 90px; height: 100px; 
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><rect width="16" height="16" fill="%230b1320"/><rect x="3" y="10" width="10" height="6" fill="%23e0f7fa"/><rect x="4" y="11" width="8" height="5" fill="%23fff"/><rect x="11" y="11" width="2" height="3" fill="%23e30a17"/><rect x="4" y="2" width="8" height="8" rx="2" fill="%23fff"/><rect x="5" y="3" width="6" height="6" fill="%23fcdbb6"/><rect x="5" y="2" width="6" height="1" fill="%23333"/><rect x="4" y="3" width="1" height="3" fill="%23333"/><rect x="11" y="3" width="1" height="3" fill="%23333"/><rect x="6" y="5" width="1" height="1" fill="%23111"/><rect x="9" y="5" width="1" height="1" fill="%23111"/><rect x="7" y="7" width="2" height="1" fill="%23a45"/><rect x="7" y="12" width="2" height="4" fill="%23aaa"/></svg>') no-repeat center/cover; 
+            image-rendering: pixelated; border-right: 2px solid #0fa; flex-shrink: 0;}
+        .alper-text-container { padding: 15px; color: #fff; font-family: 'Rajdhani', sans-serif; flex-grow: 1;}
+        .alper-name { color: #0fa; font-weight: bold; font-size: 16px; margin-bottom: 5px; font-family: 'Orbitron', sans-serif; letter-spacing: 1px;}
+        .alper-msg { font-size: 15px; line-height: 1.4; color: #e0f7fa;}
+
+        #signal-overlay { position: absolute; top:0; left:0; width:100%; height:100%; z-index: 45; display:none; background: rgba(0,5,15,0.85); flex-direction: column; justify-content: center; align-items: center; pointer-events: none;}
+        #signal-canvas { border: 2px solid #0fa; border-radius: 10px; box-shadow: 0 0 30px rgba(0,255,255,0.2); background: #000; width: 80%; max-width: 800px; height: 300px; }
+        .signal-title { color: #0ff; font-family: 'Orbitron', sans-serif; font-size: 24px; margin-bottom: 10px; letter-spacing: 2px; text-shadow: 0 0 10px #0ff;}
+
+        #mobile-controls {
+            position: absolute; bottom: 30px; left: 0; width: 100%;
+            display: flex; justify-content: space-between; padding: 0 20px;
+            box-sizing: border-box; z-index: 200; pointer-events: none;
+            display: none;
+        }
+        .mc-group { display: flex; gap: 15px; pointer-events: auto; }
+        .mc-btn {
+            width: 70px; height: 70px; border-radius: 50%;
+            background: rgba(0, 20, 30, 0.6); border: 2px solid rgba(0, 255, 255, 0.5);
+            color: #0ff; font-size: 28px; display: flex; justify-content: center; align-items: center;
+            user-select: none; backdrop-filter: blur(5px); transition: 0.1s; box-shadow: 0 0 15px rgba(0,255,255,0.2);
+            touch-action: none; 
+        }
+        .mc-btn:active { background: rgba(0, 255, 255, 0.4); transform: scale(0.9); box-shadow: 0 0 20px #0ff; }
+        
+        body.touch-device #mobile-controls.visible { display: flex !important; }
+        body.touch-device .controls-help { display: none !important; }
+        
+       @media (max-width: 950px) and (orientation: landscape) {
+            body.touch-device #ui { transform: scale(0.55); transform-origin: top left; padding: 10px; width: 300px; }
+            body.touch-device #speed-hud { transform: scale(0.55); transform-origin: bottom right; bottom: 75px; right: 10px; padding: 10px;}
+            body.touch-device #combo-hud { transform: scale(0.55); transform-origin: top right; top: 10px; right: 10px; padding: 5px 10px;}
+            body.touch-device #mobile-controls { bottom: 10px; }
+            body.touch-device .mc-btn { width: 45px; height: 45px; font-size: 16px; }
+            .base-content { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; }
+            .base-panel { min-width: 250px; }
+            .garage-layout { flex-direction: row; }
+        }
+
+        @media (max-width: 600px) and (orientation: portrait) {
+            body.touch-device #ui { width: 280px; padding: 10px; transform: scale(0.65); transform-origin: top left; }
+            body.touch-device #speed-hud { bottom: 90px; right: 10px; padding: 10px; transform: scale(0.65); transform-origin: bottom right;}
+            body.touch-device #combo-hud { top: 10px; right: 10px; padding: 5px 10px; transform: scale(0.65); transform-origin: top right;}
+            body.touch-device .mc-btn { width: 50px; height: 50px; font-size: 18px; }
+            body.touch-device #mobile-controls { bottom: 15px; padding: 0 10px; }
+            .base-content { flex-direction: column; }
+            .base-panel { width: 100%; margin-bottom: 10px; }
+            .garage-layout { flex-direction: column; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="space-bg"></div>
+    <div class="stars-bg" id="stars-bg"></div>
+    <div id="moon-surface"></div>
+    <div class="scanlines"></div>
+    <div id="impact-flash"></div>
+
+    <div id="alper-comms">
+        <div class="alper-avatar"></div>
+        <div class="alper-text-container">
+            <div class="alper-name">İLETİŞİM: ALPER GEZERAVCI</div>
+            <div class="alper-msg" id="alper-msg-text">...</div>
+        </div>
+    </div>
+    
+    <div id="transition-curtain"><div id="transition-text">YÜKLENİYOR</div></div>
+    <div id="route-screen"><canvas id="route-canvas" width="900" height="500"></canvas></div>
+
+    <div id="city-screen" class="overlay-screen">
+        <div class="glass-panel" style="text-align:center; padding: 50px; background: rgba(0, 10, 20, 0.85); max-width: 90vw;">
+            <h1 style="font-size: 40px; color: #0fa; margin-bottom: 10px;">TUA UZAY ÜSSÜ</h1>
+            <h2 style="font-size: 20px; color: #0ff; font-weight: 500; margin-top: 0; font-family: Rajdhani;">ŞEHİR MERKEZİ GİRİŞİ</h2>
+            <p style="color: #a0c4c4; margin-top: 20px; margin-bottom: 40px; font-size: 16px;">Görevi başlatmak için yetki doğrulama protokolüne geçin.</p>
+            <button id="enter-city-btn" style="padding: 15px 40px; font-size: 20px;">Üsse Gir</button>
+            <br>
+            <button class="leaderboard-btn" onclick="openLeaderboard()">Sıralamayı Gör</button>
+        </div>
+    </div>
+
+    <div id="boot-screen" class="overlay-screen">
+        <h1 style="font-size: 32px; margin-bottom: 5px; text-align: center;">TUA AĞ BAĞLANTISI</h1>
+        <p style="color: #a0c4c4; margin-bottom: 30px; font-family: Rajdhani; text-align: center;">Görev komutanı kimliği ve fırlatma üssü bekleniyor...</p>
+        <div class="form-container">
+            <input type="text" id="input-name" placeholder="Astronot Adı" autocomplete="off" maxlength="15">
+            <select id="base-select">
+                <option value="ANKARA MERKEZ ÜSSÜ">🏛️ Ankara — Merkez Üssü</option>
+                <option value="İSTANBUL UZAY LİMANI">🌉 İstanbul — Uzay Limanı</option>
+                <option value="İZMİR FIRLATMA TESİSİ">🌊 İzmir — Fırlatma Tesisi</option>
+                <option value="ANTALYA UZAY ÜSSÜ">🌴 Antalya — Uzay Üssü</option>
+                <option value="BURSA TEKNOLOJİ KAMPÜSÜ">🏔️ Bursa — Teknoloji Kampüsü</option>
+                <option value="KOCAELİ ARAŞTIRMA MERKEZİ">⚙️ Kocaeli — Araştırma Merkezi</option>
+                <option value="KONYA GÖK BİLİM ÜSSÜ">🔭 Konya — Gökyüzü Araştırma Üssü</option>
+                <option value="ERZURUM UZAY LİMANI">❄️ Erzurum — Uzay Limanı</option>
+                <option value="TRABZON DENİZ FIRLATMA">🌊 Trabzon — Deniz Fırlatma Platformu</option>
+                <option value="GAZİANTEP MÜHENDİSLİK KAMPÜSÜ">🏭 Gaziantep — Mühendislik Kampüsü</option>
+                <option value="SAMSUN DELTA ÜSSÜ">🌿 Samsun — Delta Araştırma Üssü</option>
+                <option value="ADANA GÜNEŞLİ FIRLATMA TESİSİ">☀️ Adana — Güneşli Fırlatma Tesisi</option>
+            </select>
+            <button id="boot-btn">Kimliği Doğrula</button>
+        </div>
+    </div>
+
+    <div id="story-screen" class="overlay-screen">
+        <h1 style="font-size: 32px; color: #fa0;">GÖREV: SİNCAPOWSKI</h1>
+        <div id="story-text"></div>
+        <button id="start-mission-btn" style="opacity: 0;">Görevi Onayla</button>
+    </div>
+
+    <!-- GARAJ: CANLI ÖN İZLEME (PREVIEW) PANELİ EKLENDİ -->
+    <div id="customize-screen" class="overlay-screen">
+        <div class="glass-panel garage-layout" style="padding: 40px;">
+            
+            <div class="form-container">
+                <h1 style="font-size: 30px; color: #0fa;">TUA HANGARI</h1>
+                <p style="color: #a0c4c4; margin-top: 0; margin-bottom: 10px;">Fırlatma modülünü özelleştir.</p>
+                
+                <div class="color-picker-group">
+                    <span style="font-size: 18px;">Gövde Ana Rengi:</span>
+                    <input type="color" id="color-prim" value="#d4af37">
+                </div>
+                
+                <div class="color-picker-group">
+                    <span style="font-size: 18px;">Detay & Kanat Rengi:</span>
+                    <input type="color" id="color-sec" value="#1a1a24">
+                </div>
+                
+                <div style="margin-top: 10px; margin-bottom: 20px; text-align: left;">
+                    <span style="font-size: 18px; display:block; margin-bottom:10px;">Gemi Sınıfı:</span>
+                    <select id="shape-select" style="width: 100%;">
+                        <option value="0">Klasik TUA Keşif Modülü</option>
+                        <option value="1">Çevik (Sleek) Aerodinamik Jet</option>
+                        <option value="2">Ağır Zırhlı (Bulky) Yük Gemisi</option>
+                    </select>
+                </div>
+                
+                <button id="custom-finish-btn" style="background: rgba(0, 255, 100, 0.15); border-color: #0fa; color: #0fa;">Tasarımı Onayla & Üsse Geç</button>
+            </div>
+            
+            <!-- CANLI ÖN İZLEME CANVAS'I -->
+            <div class="preview-container">
+                <div class="preview-title">ROKET ÖN İZLEME</div>
+                <canvas id="preview-canvas" width="200" height="250" style="margin-top: 30px;"></canvas>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="base-ui" class="glass-panel">
+        <div class="base-header">
+            <h1 style="font-size: 28px;" id="base-name-display">TUA MERKEZ ÜSSÜ</h1>
+            <p style="color: #0fa; font-size: 14px; letter-spacing: 2px; font-family: Rajdhani;">SİSTEMLER HAZIRLANIYOR</p>
+        </div>
+        <div class="base-content">
+            <div class="base-panel">
+                <h3 style="color:#0ff; text-align:center; font-family:Rajdhani;">YÖRÜNGE RADARI</h3>
+                <div class="radar-box"><div class="radar-sweep"></div></div>
+                <p style="text-align:center; color:#a0c4c4; margin-top:15px;">Hedef: Ay Yüzeyi</p>
+            </div>
+            <div class="base-panel">
+                <h3 style="color:#0ff; text-align:center; font-family:Rajdhani;">UÇUŞ SİSTEMLERİ</h3>
+                <div class="sys-check">İtiş Motorları: <span style="float:right; color:#0fa;">%100</span></div>
+                <div class="sys-bar"><div class="sys-fill" id="sys1"></div></div>
+                <div class="sys-check">Navigasyon Modülü: <span style="float:right; color:#0fa;">%100</span></div>
+                <div class="sys-bar"><div class="sys-fill" id="sys2"></div></div>
+                <div class="sys-check">Yaşam Destek: <span style="float:right; color:#0fa;">%100</span></div>
+                <div class="sys-bar"><div class="sys-fill" id="sys3"></div></div>
+                <div class="sys-check">TUA İletişim Ağı: <span style="float:right; color:#0fa;">%100</span></div>
+                <div class="sys-bar"><div class="sys-fill" id="sys4"></div></div>
+            </div>
+            <div class="base-panel" style="justify-content: center; align-items: center;">
+                <h2 style="color:#fa0; text-align:center; margin-bottom: 20px; font-family:Rajdhani;">KALKIM ONAYI BEKLENİYOR</h2>
+                <button id="launch-btn" style="font-size: 20px; padding: 15px 30px; background: rgba(0, 255, 0, 0.15); border-color: #0fa; color: #0fa; box-shadow: 0 0 20px rgba(0,255,0,0.3); opacity: 0; pointer-events: none;">GÖREVİ BAŞLAT</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ui" class="glass-panel">
+        <h1 id="player-hud-name">SİNCAPOWSKI</h1>
+        <div class="hud-line"></div>
+        <div id="level-text">BÖLÜM 1: DÜNYA'DAN KALKIŞ</div>
+        
+        <div id="lander-stats">
+            <div class="stat"><span>İrtifa:</span> <span id="alt" class="stat-val">0 m</span></div>
+            <div class="stat"><span>Hız:</span> <span id="speed" class="stat-val">0.0 m/s</span></div>
+            <div class="stat" style="color:#fa0;"><span>Sistem:</span> <span id="wind-dir" class="stat-val">STABİL</span></div>
+        </div>
+        
+        <div class="stat" style="margin-top: 15px;"><span id="primary-label">Yakıt:</span></div>
+        <div class="bar-container"><div id="primary-bar" class="bar" style="width: 100%;"></div></div>
+
+        <div id="secondary-container">
+            <div class="stat"><span id="secondary-label">Isı:</span></div>
+            <div class="bar-container"><div id="secondary-bar" class="bar" style="width: 0%;"></div></div>
+        </div>
+
+        <div id="drill-ui">
+            <div class="stat" style="color:#0fa;"><span>KAZI (COMBO x<span id="combo-text">1</span>):</span> <span id="drill-percent" class="stat-val">%0</span></div>
+            <div class="bar-container" style="height: 22px;">
+                <div id="drill-zone"></div>
+                <div id="drill-indicator"></div>
+            </div>
+        </div>
+
+        <div id="signal-ui"></div>
+        <div class="controls-help" id="controls-text"></div>
+        
+        <div id="score-display" style="display:none; text-align:center; margin-top:20px; font-size:24px; color:#fa0; text-shadow:0 0 10px #fa0; font-family:'Orbitron',sans-serif;">
+            TOPLAM PUAN: <span id="total-score-val">0</span>
+        </div>
+    </div>
+    
+    <div id="signal-overlay">
+        <div class="signal-title">FREKANS AYARLANIYOR...</div>
+        <canvas id="signal-canvas" width="800" height="300"></canvas>
+        <div style="color:#0fa; margin-top:10px; font-family:monospace; font-size:16px;">TÜNELDE KAL! - [SPACE / EKRANA BAS]</div>
+    </div>
+
+    <div id="speed-hud" class="glass-panel">
+        <div class="spd-label">HIZ</div>
+        <div class="spd-val" id="astro-speed-val">0</div>
+        <div class="spd-label">m/s</div>
+        <div class="dash-bar"><div class="dash-fill" id="dash-fill-bar" style="width:0%"></div></div>
+        <div class="spd-label" style="margin-top:4px;">DASH ŞARJ</div>
+    </div>
+    <div id="combo-hud" class="glass-panel">
+        <div class="spd-label">COMBO</div>
+        <div class="combo-val" id="astro-combo-display">x1</div>
+    </div>
+
+    <div id="mobile-controls">
+        <div class="mc-group">
+            <div class="mc-btn" id="btn-left">◀</div>
+            <div class="mc-btn" id="btn-right">▶</div>
+        </div>
+        <div class="mc-group">
+            <div class="mc-btn" id="btn-dash" style="border-color:#fa0; color:#fa0;">⚡</div>
+            <div class="mc-btn" id="btn-action">🚀</div>
+        </div>
+    </div>
+
+    <div id="message" class="glass-panel">
+        <div id="msg-text"></div>
+        <button id="action-btn">Devam Et</button>
+    </div>
+
+    <canvas id="game"></canvas>
+
+    <!-- SIRALAMA MODAL -->
+    <div id="lb-modal" onclick="if(event.target===this)closeLeaderboard()">
+        <div id="lb-content" class="glass-panel">
+            <h2>🏆 SIRALAMA</h2>
+            <div class="lb-sub">En İyi 20 Astronot</div>
+            <div id="lb-list"><div class="lb-empty">Yükleniyor...</div></div>
+            <button id="lb-close" class="leaderboard-btn" onclick="closeLeaderboard()">Kapat</button>
+        </div>
+    </div>
+
+    <script>
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        document.body.classList.add('touch-device');
+    }
+
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    let uiPanel = document.getElementById('ui');
+    let flash = document.getElementById('impact-flash');
+    let curtain = document.getElementById('transition-curtain');
+    let curtainText = document.getElementById('transition-text');
+    let mobileControls = document.getElementById('mobile-controls');
+    
+    let state = 'city'; 
+    let playerName = "ADAY";
+    let selectedBaseName = "ANKARA MERKEZ ÜSSÜ";
+    let currentLevel = 1;
+    const maxLevel = 9; 
+    let totalScore = 0;
+    let scoreAccumulated = false; 
+    
+    let rocketPrim = "#d4af37";
+    let rocketSec = "#1a1a24";
+    let rocketShape = "0";
+
+    let fuel, heat, alt, lander, pad, particles = [], meteors = [], launchDebris = [], powerups = [], windForce = 0;
+    let astro, craters = [], platforms = [], enemies = [], camera = { x: 0 }, bgOffset = 0, flagPole = {x: 14500, y: 0};
+    let drillProgress = 0, combo = 1, indicatorX = 0, indicatorDir = 1, zoneConfig = { start: 40, width: 20 }; 
+    let requestAnimationFrameId = null;
+    let launchWorldY = 0, launchCameraY = 0;
+    let signalY = 150, signalVy = 0, signalFrame = 0;
+    
+    const scvs = document.getElementById('signal-canvas');
+    const sctx = scvs.getContext('2d');
+    let cfg;
+    let launchStars = [], spaceDust = [];
+    let milliUydular = [];
+
+    // ALPER GEZERAVCI MESAJ GÖSTERİCİ
+    window.alperTimeout = null;
+    function showAlperMessage(msg, duration = 4000) {
+        let box = document.getElementById('alper-comms');
+        document.getElementById('alper-msg-text').innerHTML = msg;
+        box.style.display = 'flex';
+        if(window.alperTimeout) clearTimeout(window.alperTimeout);
+        if(duration > 0) {
+            window.alperTimeout = setTimeout(() => {
+                box.style.display = 'none';
+            }, duration);
+        }
+    }
+
+    // YENİ: ROKET ÖN İZLEME ÇİZİMİ
+    function drawPreview() {
+        let pCanvas = document.getElementById('preview-canvas');
+        if(!pCanvas) return;
+        let pctx = pCanvas.getContext('2d');
+        pctx.clearRect(0,0, pCanvas.width, pCanvas.height);
+        
+        let pPrim = document.getElementById('color-prim').value;
+        let pSec = document.getElementById('color-sec').value;
+        let pShape = document.getElementById('shape-select').value;
+        
+        pctx.save();
+        pctx.translate(pCanvas.width/2, pCanvas.height/2);
+        pctx.scale(2.5, 2.5); // Büyütülmüş çizim
+        
+        // Sadece alev efekti için thrusting true yapıyoruz
+        renderRocketGraphics(pctx, pShape, pPrim, pSec, false, true, false); 
+        pctx.restore();
+    }
+
+    // Etkinlik Dinleyicileri (Garaj değişiklikleri anında yansır)
+    document.getElementById('color-prim').addEventListener('input', drawPreview);
+    document.getElementById('color-sec').addEventListener('input', drawPreview);
+    document.getElementById('shape-select').addEventListener('change', drawPreview);
+
+    window.bindBtn = function(id, callback) {
+        let btn = document.getElementById(id);
+        if (!btn) return;
+        
+        let triggered = false;
+        let action = function(e) {
+            if (e && e.type === 'touchstart') e.preventDefault(); 
+            if (triggered) return;
+            triggered = true;
+            callback();
+            setTimeout(() => triggered = false, 400); 
+        };
+        
+        btn.addEventListener('touchstart', action, {passive: false});
+        btn.addEventListener('click', action);
+    };
+
+    bindBtn('enter-city-btn', () => {
+        document.getElementById('city-screen').style.display = 'none';
+        document.getElementById('boot-screen').style.display = 'flex';
+        state = 'boot';
+    });
+
+    bindBtn('boot-btn', () => {
+        let input = document.getElementById('input-name');
+        if(input) input.blur(); 
+
+        let n = input.value.trim();
+        if(n) playerName = n.toUpperCase();
+        selectedBaseName = document.getElementById('base-select').value;
+        document.getElementById('base-name-display').innerText = selectedBaseName;
+        
+        document.getElementById('boot-screen').style.display = 'none'; 
+        document.getElementById('story-screen').style.display = 'flex';
+        state = 'story';
+        startStoryText();
+    });
+
+    bindBtn('start-mission-btn', () => {
+        document.getElementById('story-screen').style.display = 'none';
+        document.getElementById('customize-screen').style.display = 'flex';
+        state = 'customize';
+        drawPreview(); // Garaj açıldığında hemen çizer
+    });
+
+    bindBtn('custom-finish-btn', () => {
+        rocketPrim = document.getElementById('color-prim').value;
+        rocketSec = document.getElementById('color-sec').value;
+        rocketShape = document.getElementById('shape-select').value;
+        
+        document.getElementById('customize-screen').style.display = 'none';
+        triggerTransition(1);
+    });
+
+    bindBtn('launch-btn', () => {
+        triggerTransition(2);
+    });
+
+    bindBtn('action-btn', () => {
+        let btn = document.getElementById('action-btn');
+        let txt = btn.innerText.toUpperCase();
+        if (txt === "TEKRAR DENE") {
+            triggerTransition(currentLevel);
+        } else if (txt === "DEVAM ET") {
+            triggerTransition(currentLevel + 1);
+        } else {
+            location.reload();
+        }
+    });
+
+    let lastCanvasHeight = window.innerHeight;
+    function resize() { 
+        let newW = window.innerWidth;
+        let newH = window.innerHeight;
+        let diffY = newH - lastCanvasHeight; 
+
+        canvas.width = newW; 
+        canvas.height = newH; 
+        
+        if (state === 'playing' && typeof cfg !== 'undefined') {
+            if (cfg.type === 'astro' && typeof astro !== 'undefined') {
+                astro.y += diffY;
+                if(platforms) platforms.forEach(p => p.y += diffY);
+                if(enemies) enemies.forEach(e => { e.y += diffY; e.baseY += diffY; });
+                if(flagPole) flagPole.y += diffY;
+            } else if (cfg.type === 'lander' && typeof pad !== 'undefined') {
+                pad.y = canvas.height - 50;
+            }
+        }
+
+        let rc = document.getElementById('route-canvas');
+        if(newW < 900) { rc.width = newW * 0.9; rc.height = newH * 0.5; }
+        else { rc.width = 900; rc.height = 500; }
+        
+        lastCanvasHeight = newH;
+    }
+    window.addEventListener('resize', resize); resize();
+
+    const keys = {};
+    let isMouseDown = false;
+    let isRightMouseDown = false;
+    let targetX = canvas.width / 2;
+
+    const btnL = document.getElementById('btn-left');
+    const btnR = document.getElementById('btn-right');
+    const btnA = document.getElementById('btn-action');
+    const btnD = document.getElementById('btn-dash');
+
+    function bindTouch(btn, key, mouseStr) {
+        btn.addEventListener('touchstart', e => {
+            e.preventDefault();
+            keys[key] = true;
+            if(mouseStr === 'left') isMouseDown = true;
+            if(mouseStr === 'right') isRightMouseDown = true;
+        }, {passive: false});
+        btn.addEventListener('touchend', e => {
+            e.preventDefault();
+            keys[key] = false;
+            if(mouseStr === 'left') isMouseDown = false;
+            if(mouseStr === 'right') isRightMouseDown = false;
+        });
+    }
+
+    bindTouch(btnL, 'KeyA', null); 
+    bindTouch(btnR, 'KeyD', null); 
+    bindTouch(btnA, 'Space', 'left'); 
+    bindTouch(btnD, 'ShiftLeft', 'right'); 
+
+    document.addEventListener('touchmove', e => {
+        if (state === 'playing' && (e.target.tagName === 'CANVAS' || e.target.classList.contains('mc-btn'))) {
+            e.preventDefault();
+            if (e.target.tagName === 'CANVAS') targetX = e.touches[0].clientX;
+        }
+    }, {passive: false});
+    
+    document.addEventListener('touchstart', e => {
+    if(state === 'playing') {
+        if(e.target.tagName === 'CANVAS') targetX = e.touches[0].clientX;
+        // Ekranda Nereye dokunursan dokun (panel dahil), matkap ve sinyal çalışsın!
+        if(cfg && cfg.type !== 'astro') isMouseDown = true; 
+    }
+}, {passive: false});
+    
+    document.addEventListener('touchend', e => {
+        if(state === 'playing' && cfg && cfg.type !== 'astro') isMouseDown = false;
+    });
+
+    window.addEventListener('contextmenu', e => e.preventDefault());
+    window.addEventListener('keydown', e => {
+        if (state === 'transition' || state === 'boot' || state === 'city' || state === 'ended' || state === 'base' || state === 'story' || state === 'route' || state === 'customize') return; 
+        keys[e.code] = true; 
+    });
+    window.addEventListener('keyup', e => keys[e.code] = false);
+    
+    window.addEventListener('mousedown', (e) => { 
+        if (state !== 'playing') return; 
+        if(e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.classList.contains('mc-btn')) return;
+        if (e.button === 0) isMouseDown = true; 
+        if (e.button === 2) isRightMouseDown = true; 
+    });
+    window.addEventListener('mouseup', (e) => { 
+        if (e.button === 0) isMouseDown = false; 
+        if (e.button === 2) isRightMouseDown = false;
+    });
+    window.addEventListener('mousemove', (e) => { if (state === 'playing') targetX = e.clientX; });
+
+    const levelConfig = [
+        { id: 1, type: 'base', name: "BÖLÜM 1: ÜS HAZIRLIK" },
+        { id: 2, type: 'launch', name: "BÖLÜM 2: DÜNYA'DAN KALKIŞ", grav: 0.003, thrust: 0.025, fuelBurn: 0.04, maxSpd: 0 },
+        { id: 3, type: 'evade', name: "BÖLÜM 3: ASTEROİD KUŞAĞI" },
+        { id: 4, type: 'lander', name: "BÖLÜM 4: YÖRÜNGE İNİŞİ", grav: 0.003, thrust: 0.025, fuelBurn: 0.06, padW: 280, metRate: 0.0, wind: 0, padSpd: 0, maxSpd: 8.0 },
+        { id: 5, type: 'lander', name: "BÖLÜM 5: İYONOSFER", grav: 0.004, thrust: 0.030, fuelBurn: 0.08, padW: 200, metRate: 0.015, wind: 0.015, padSpd: 0.8, maxSpd: 9.0 },
+        { id: 6, type: 'lander', name: "BÖLÜM 6: KRATER YAKLAŞMASI", grav: 0.009, thrust: 0.050, fuelBurn: 0.1, padW: 140, metRate: 0.030, wind: 0.04, padSpd: 0.8, maxSpd: 12.0 },
+        { id: 7, type: 'astro',  name: "BÖLÜM 7: AY YÜZEYİ KEŞFİ" }, 
+        { id: 8, type: 'drill',  name: "BÖLÜM 8: ZORLU MADEN KAZISI" },
+        { id: 9, type: 'signal', name: "BÖLÜM 9: FREKANS TÜNELİ" }
+    ];
+
+    function startStoryText() {
+        document.getElementById('player-hud-name').innerText = "KPT. " + playerName;
+        let text = `Yıl 2026. TUA Ay Programı aktif.\nÜs: ${selectedBaseName}\nKomutan: ${playerName}.\n\nGörevin: Ay'ın yüzeyine inmek, zorlu şartlarda o nadir madeni bulmak ve TUA'ya iletmek.\n\nBaşarısızlık bir seçenek değil.`;
+        let i = 0, container = document.getElementById('story-text');
+        container.innerHTML = "";
+        function type() {
+            if (i < text.length) {
+                container.innerHTML += text.charAt(i) === '\n' ? '<br>' : text.charAt(i);
+                i++; setTimeout(type, 25);
+            } else { 
+                document.getElementById('start-mission-btn').style.opacity = 1; 
+            }
+        }
+        type();
+    }
+
+    function showRouteAnimation(callback) {
+        state = 'route';
+        let rc = document.getElementById('route-canvas');
+        let rx = rc.getContext('2d');
+        document.getElementById('route-screen').style.display = 'flex';
+
+        let progress = 0; 
+        let routeAnim;
+        
+        const W = rc.width, H = rc.height;
+        const waypoints = [
+            { x: 120, y: H-80, label: selectedBaseName.split(' ')[0] },
+            { x: W*0.3, y: H-180, label: "ATMOSFERİK\nGEÇİŞ" },
+            { x: W*0.5, y: 120, label: "UZAY\nBOŞLUĞU" },
+            { x: W*0.7, y: 80, label: "AY\nYÖRÜNGESİ" },
+            { x: W-100, y: H-100, label: "AY\nGÜNEY KUTUBU" },
+        ];
+
+        function catmullPoint(t, p0, p1, p2, p3) {
+            let t2 = t*t, t3 = t2*t;
+            return {
+                x: 0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3),
+                y: 0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3)
+            };
+        }
+        const pts = [waypoints[0], ...waypoints, waypoints[waypoints.length-1]];
+
+        function getRoutePos(t) {
+            let segs = pts.length-3, seg = Math.min(Math.floor(t*segs), segs-1);
+            let lt = t*segs - seg;
+            return catmullPoint(lt, pts[seg], pts[seg+1], pts[seg+2], pts[seg+3]);
+        }
+
+        let stars = [];
+        for(let i=0;i<200;i++) stars.push({x:Math.random()*W, y:Math.random()*H, r:Math.random()*1.5+0.3, twinkle:Math.random()*Math.PI*2});
+
+        let elapsed = 0;
+        const DURATION = 220; 
+
+        function drawRoute() {
+            elapsed++;
+            progress = Math.min(elapsed / DURATION, 1);
+
+            rx.clearRect(0,0,W,H);
+            
+            let skyGrad = rx.createLinearGradient(0,0,0,H);
+            skyGrad.addColorStop(0, '#000010');
+            skyGrad.addColorStop(0.3, '#000815');
+            skyGrad.addColorStop(0.75, '#001133');
+            skyGrad.addColorStop(1, '#002255');
+            rx.fillStyle = skyGrad;
+            rx.fillRect(0,0,W,H);
+
+            elapsed % 3 === 0 && stars.forEach(s => s.twinkle += 0.05);
+            stars.forEach(s => {
+                rx.globalAlpha = 0.4 + Math.abs(Math.sin(s.twinkle)) * 0.6;
+                rx.fillStyle = '#fff';
+                rx.beginPath(); rx.arc(s.x, s.y, s.r, 0, Math.PI*2); rx.fill();
+            });
+            rx.globalAlpha = 1;
+
+            let earthGrad = rx.createRadialGradient(80,H-40,5, 80,H-40,80);
+            earthGrad.addColorStop(0,'#1a6aff'); earthGrad.addColorStop(0.5,'#0044cc'); earthGrad.addColorStop(1,'rgba(0,30,120,0)');
+            rx.fillStyle = earthGrad; rx.beginPath(); rx.arc(80,H-40,80,0,Math.PI*2); rx.fill();
+            rx.fillStyle = '#0fa'; rx.globalAlpha = 0.4; rx.beginPath(); rx.arc(55,H-80,15,0,Math.PI*2); rx.fill();
+            rx.globalAlpha = 1;
+
+            let moonGrad = rx.createRadialGradient(W-100,H-100,5, W-90,H-110,55);
+            moonGrad.addColorStop(0,'#d4cfc8'); moonGrad.addColorStop(0.7,'#a09890'); moonGrad.addColorStop(1,'#606060');
+            rx.fillStyle = moonGrad; rx.beginPath(); rx.arc(W-100,H-100,55,0,Math.PI*2); rx.fill();
+            [[W-115,H-130,8],[W-90,H-90,5],[W-130,H-95,4]].forEach(([cx,cy,cr])=>{ rx.fillStyle='rgba(0,0,0,0.3)'; rx.beginPath(); rx.arc(cx,cy,cr,0,Math.PI*2); rx.fill(); });
+
+            rx.setLineDash([6,8]); rx.strokeStyle = 'rgba(0,255,255,0.2)'; rx.lineWidth=2;
+            rx.beginPath();
+            for(let i=0;i<=100;i++) { let p = getRoutePos(i/100); i===0?rx.moveTo(p.x,p.y):rx.lineTo(p.x,p.y); }
+            rx.stroke(); rx.setLineDash([]);
+
+            let drawTo = Math.floor(progress * 100);
+            if(drawTo > 0) {
+                rx.lineWidth = 3;
+                let grad = rx.createLinearGradient(waypoints[0].x, waypoints[0].y, waypoints[waypoints.length-1].x, waypoints[waypoints.length-1].y);
+                grad.addColorStop(0,'#0ff'); grad.addColorStop(0.5,'#0fa'); grad.addColorStop(1,'#fa0');
+                rx.strokeStyle = grad; rx.beginPath();
+                for(let i=0;i<=drawTo;i++) { let p = getRoutePos(i/100); i===0?rx.moveTo(p.x,p.y):rx.lineTo(p.x,p.y); }
+                rx.stroke();
+
+                rx.lineWidth = 8; rx.globalAlpha = 0.25; rx.strokeStyle = '#0ff';
+                rx.beginPath();
+                for(let i=0;i<=drawTo;i++) { let p = getRoutePos(i/100); i===0?rx.moveTo(p.x,p.y):rx.lineTo(p.x,p.y); }
+                rx.stroke(); rx.globalAlpha = 1; rx.lineWidth = 1;
+            }
+
+            waypoints.forEach((wp, idx) => {
+                let wpProgress = idx / (waypoints.length - 1);
+                let reached = progress >= wpProgress;
+                let alpha = reached ? 1 : 0.3;
+                rx.globalAlpha = alpha;
+                rx.fillStyle = reached ? '#0ff' : '#555';
+                rx.beginPath(); rx.arc(wp.x, wp.y, 8, 0, Math.PI*2); rx.fill();
+                rx.strokeStyle = '#fff'; rx.lineWidth = 2; rx.stroke();
+                rx.fillStyle = '#fff'; rx.font = "11px Rajdhani";
+                wp.label.split('\n').forEach((line, li) => { rx.fillText(line, wp.x + 14, wp.y + li*14 - 5); });
+                rx.globalAlpha = 1;
+            });
+
+            if(progress > 0) {
+                let pos = getRoutePos(progress);
+                let posNext = getRoutePos(Math.min(progress + 0.01, 1));
+                let angle = Math.atan2(posNext.y - pos.y, posNext.x - pos.x);
+                rx.save(); rx.translate(pos.x, pos.y); rx.rotate(angle);
+                rx.fillStyle = '#ffaa00'; rx.globalAlpha = 0.9;
+                rx.beginPath(); rx.moveTo(-14,0); rx.lineTo(-24,-5); rx.lineTo(-24,5); rx.fill();
+                rx.globalAlpha = 0.5; rx.fillStyle = '#ff5500';
+                rx.beginPath(); rx.moveTo(-14,0); rx.lineTo(-30,0); rx.fill();
+                rx.globalAlpha = 1;
+                rx.fillStyle = '#d4af37';
+                rx.beginPath(); rx.moveTo(14,0); rx.lineTo(-10,-7); rx.lineTo(-10,7); rx.fill();
+                rx.fillStyle = '#0ff'; rx.beginPath(); rx.arc(4,0,4,0,Math.PI*2); rx.fill();
+                rx.restore();
+
+                for(let t=Math.max(0,progress-0.08); t<progress; t+=0.008) {
+                    let tp = getRoutePos(t); let alpha = (t - (progress-0.08)) / 0.08;
+                    rx.fillStyle = `rgba(0,255,200,${alpha*0.6})`; rx.beginPath(); rx.arc(tp.x, tp.y, 3*alpha, 0, Math.PI*2); rx.fill();
+                }
+            }
+
+            rx.fillStyle = '#0ff'; rx.font = "bold 22px Orbitron";
+            rx.textAlign = 'center';
+            rx.fillText("DÜNYA → AY GÜZERGAHI", W/2, 45);
+            rx.fillStyle = 'rgba(0,255,255,0.15)'; rx.fillRect(W/2-180, 55, 360, 3);
+            
+            rx.fillStyle = '#fa0'; rx.font = "18px Rajdhani";
+            rx.fillText(`GÜZERGAH TAMAMLANDI: %${Math.floor(progress*100)}`, W/2, H-25);
+            rx.textAlign = 'left';
+
+            if(progress < 1) {
+                routeAnim = requestAnimationFrame(drawRoute);
+            } else {
+                setTimeout(() => {
+                    document.getElementById('route-screen').style.display = 'none';
+                    callback();
+                }, 1500);
+            }
+        }
+        routeAnim = requestAnimationFrame(drawRoute);
+    }
+
+    function triggerTransition(levelNum) {
+        state = 'transition';
+        isMouseDown = false; isRightMouseDown = false;
+        Object.keys(keys).forEach(k => keys[k] = false); 
+        scoreAccumulated = false;
+
+        document.getElementById('message').style.display = 'none'; 
+        document.getElementById('story-screen').style.display = 'none';
+        document.getElementById('base-ui').style.display = 'none';
+        document.getElementById('signal-overlay').style.display = 'none';
+        document.getElementById('alper-comms').style.display = 'none'; 
+        uiPanel.classList.remove('visible');
+        mobileControls.classList.remove('visible'); 
+        canvas.style.display = 'none';
+        document.getElementById('speed-hud').style.display = 'none';
+        document.getElementById('combo-hud').style.display = 'none';
+        document.getElementById('score-display').style.display = 'none';
+        
+        if (requestAnimationFrameId) { cancelAnimationFrame(requestAnimationFrameId); requestAnimationFrameId = null; }
+
+        if (levelNum === 4) { 
+            curtain.style.display = 'flex';
+            curtainText.innerText = "ATMOSFER AŞILDI";
+            setTimeout(() => { curtain.style.opacity = 1; }, 50);
+            setTimeout(() => { curtainText.style.opacity = 1; }, 400);
+            setTimeout(() => {
+                curtain.style.opacity = 0;
+                setTimeout(() => { curtain.style.display = 'none'; }, 500);
+                showRouteAnimation(() => {
+                    finishTransition(levelNum);
+                });
+            }, 2000);
+            return;
+        }
+
+        curtain.style.display = 'flex';
+        curtainText.innerText = levelConfig[levelNum-1].name;
+        setTimeout(() => { curtain.style.opacity = 1; }, 50);
+        setTimeout(() => { curtainText.style.opacity = 1; }, 500);
+
+        let spaceBg = document.getElementById('space-bg');
+        let starsBg = document.getElementById('stars-bg');
+        let moonBg = document.getElementById('moon-surface');
+        
+        if (levelNum === 1 || levelNum === 2) {
+            spaceBg.style.background = 'linear-gradient(to bottom, #001133 0%, #33aaff 100%)';
+            starsBg.style.opacity = 0; moonBg.style.opacity = 0;
+        } else if (levelNum >= 4 && levelNum <= 6) {
+            spaceBg.style.background = 'radial-gradient(circle at center, #0a0f1a 0%, #010103 100%)';
+            starsBg.style.opacity = 0.3; moonBg.style.opacity = 0; 
+        } else if (levelNum === 7) {
+            spaceBg.style.background = 'radial-gradient(circle at center, #0a0f1a 0%, #010103 100%)'; 
+            starsBg.style.opacity = 0.2; moonBg.style.opacity = 0; 
+        } else {
+            spaceBg.style.background = '#010103';
+            starsBg.style.opacity = 0.4; moonBg.style.opacity = 0.5;
+        }
+
+        setTimeout(() => { curtainText.style.opacity = 0; }, 1500); 
+        setTimeout(() => {
+            resize(); 
+            initLevelData(levelNum); 
+            curtain.style.opacity = 0;
+            setTimeout(() => { curtain.style.display = 'none'; }, 500);
+
+            if(levelNum === 1) {
+                document.getElementById('base-ui').style.display = 'flex';
+                state = 'base';
+            } else if (levelNum === 9) {
+                document.getElementById('signal-overlay').style.display = 'flex';
+                uiPanel.classList.add('visible');
+                state = 'playing'; 
+                requestAnimationFrameId = requestAnimationFrame(loop);
+            } else {
+                canvas.style.display = 'block';
+                uiPanel.classList.add('visible');
+                mobileControls.classList.add('visible'); 
+                state = 'playing'; 
+                requestAnimationFrameId = requestAnimationFrame(loop);
+            }
+        }, 2000);
+    }
+
+    function finishTransition(levelNum) {
+        let spaceBg = document.getElementById('space-bg');
+        let starsBg = document.getElementById('stars-bg');
+        let moonBg = document.getElementById('moon-surface');
+        spaceBg.style.background = 'radial-gradient(circle at center, #0a0f1a 0%, #010103 100%)';
+        starsBg.style.opacity = 0.3; moonBg.style.opacity = 0;
+
+        curtain.style.display = 'flex';
+        curtainText.innerText = levelConfig[levelNum-1].name;
+        setTimeout(() => { curtain.style.opacity = 1; }, 50);
+        setTimeout(() => { curtainText.style.opacity = 1; }, 400);
+        setTimeout(() => { curtainText.style.opacity = 0; }, 1500);
+        setTimeout(() => {
+            resize(); 
+            initLevelData(levelNum);
+            curtain.style.opacity = 0;
+            setTimeout(() => { curtain.style.display = 'none'; }, 500);
+            canvas.style.display = 'block';
+            uiPanel.classList.add('visible');
+            mobileControls.classList.add('visible'); 
+            state = 'playing'; 
+            requestAnimationFrameId = requestAnimationFrame(loop);
+        }, 2000);
+    }
+
+    function generateLaunchBG() {
+        launchStars = [];
+        spaceDust = [];
+        let w = Math.max(window.innerWidth, canvas.width, 1200);
+        let h = Math.max(window.innerHeight, canvas.height, 800);
+        for(let i=0;i<400;i++) launchStars.push({x: Math.random()*w, y: Math.random()*h, r: Math.random()*1.5+0.3, t: Math.random()*Math.PI*2});
+        for(let i=0;i<150;i++) spaceDust.push({x: Math.random()*w, sy: Math.random()*h, r: Math.random()*2+1, speed: Math.random()*1.5+0.5});
+    }
+
+    function initLevelData(levelNum) {
+        currentLevel = levelNum;
+        cfg = levelConfig[currentLevel - 1];
+        document.getElementById('level-text').innerText = cfg.name;
+        uiPanel.classList.remove('danger-panel');
+        particles = []; meteors = []; launchDebris = []; enemies = []; platforms = []; craters = []; powerups = [];
+        document.getElementById('drill-ui').style.display = 'none';
+        document.getElementById('signal-ui').style.display = 'none';
+        document.getElementById('secondary-container').style.display = 'block';
+        document.getElementById('wind-dir').innerText = "STABİL";
+        document.getElementById('lander-stats').style.display = 'block';
+        document.getElementById('speed-hud').style.display = 'none';
+        document.getElementById('combo-hud').style.display = 'none';
+
+        if (cfg.type === 'base') initBase();
+        else if (cfg.type === 'launch') { initLaunch(); generateLaunchBG(); }
+        else if (cfg.type === 'evade') { initEvade(); generateLaunchBG(); }
+        else if (cfg.type === 'lander') { initLander(); generateLaunchBG(); }
+        else if (cfg.type === 'astro') { initAstro(); generateLaunchBG(); }
+        else if (cfg.type === 'drill') initDrill();
+        else if (cfg.type === 'signal') initSignal();
+
+        let btnL = document.getElementById('btn-left');
+        let btnR = document.getElementById('btn-right');
+        let btnA = document.getElementById('btn-action');
+        let btnD = document.getElementById('btn-dash');
+
+        if(cfg.type === 'astro') { btnA.innerText = "🚀"; btnD.innerText = "⚡"; btnL.style.display = 'flex'; btnR.style.display = 'flex'; btnD.style.display = 'flex'; }
+        else if(cfg.type === 'drill' || cfg.type === 'signal') { btnA.innerText = "👆"; btnL.style.display = 'none'; btnR.style.display = 'none'; btnD.style.display = 'none'; }
+        else { btnA.innerText = "🔥"; btnD.innerText = "🛑"; btnL.style.display = 'none'; btnR.style.display = 'none'; btnD.style.display = 'flex'; }
+    }
+
+    function initBase() {
+        let btn = document.getElementById('launch-btn');
+        btn.style.opacity = 0; btn.style.pointerEvents = 'none';
+        ['sys1','sys2','sys3','sys4'].forEach(id => document.getElementById(id).style.width = '0%');
+        setTimeout(() => document.getElementById('sys1').style.width = '100%', 500);
+        setTimeout(() => document.getElementById('sys2').style.width = '100%', 1000);
+        setTimeout(() => document.getElementById('sys3').style.width = '100%', 1500);
+        setTimeout(() => document.getElementById('sys4').style.width = '100%', 2000);
+        setTimeout(() => { btn.style.opacity = 1; btn.style.pointerEvents = 'auto'; }, 2500);
+    }
+
+    function initLaunch() {
+        fuel = 800; heat = 0;
+        launchWorldY = 0; 
+        launchCameraY = 0;
+        document.getElementById('lander-stats').style.display = 'block';
+        document.getElementById('primary-label').innerText = "Yakıt:";
+        document.getElementById('secondary-label').innerText = "Isı:";
+        document.getElementById('secondary-label').style.color = '#fff';
+        document.getElementById('controls-text').innerHTML = `<span class="key">MOUSE/DOKUN</span> Yön &nbsp; <span class="key">SPACE/TIK</span> Motor<br>⚠️ Atmosferi Aş — Yüksekliği Gözlemle!`;
+        
+        lander = { 
+            x: canvas.width / 2, 
+            screenY: canvas.height - 100, 
+            vx: 0, vy: 0, 
+            w: 44, h: 44, 
+            overheated: false, braking: false, thrusting: false
+        };
+        pad = { w: 300, h: 50, x: canvas.width / 2 - 150, y: canvas.height - 50 };
+
+        milliUydular = [
+            { ad: "GÖKTÜRK-1", worldY: -4000, x: canvas.width * 0.75, renk: '#0fa', info: "Kaptan, Göktürk-1'in yanından geçiyoruz. TUA'nın askeri istihbarat gözü. Yüksek çözünürlüklü optikleri dünyayı tarıyor.", triggered: false },
+            { ad: "İMECE", worldY: -8000, x: canvas.width * 0.25, renk: '#0ff', info: "İmece uydumuz solda! İlk yerli yüksek çözünürlüklü gözlem uydumuz. Güneşe eşzamanlı yörüngede turluyor.", triggered: false },
+            { ad: "TÜRKSAT 6A", worldY: -12000, x: canvas.width * 0.65, renk: '#fa0', info: "Türksat 6A alanındayız. 35.786 km yer sabit yörüngede haberleşmemizi sağlıyor. Uzaya çok yaklaştın, dayan!", triggered: false }
+        ];
+    }
+
+    function initEvade() {
+        fuel = 100; heat = 0; powerups = [];
+        lander = { x: canvas.width / 2, y: canvas.height - 100, vx: 0, vy: 0, w: 44, h: 44, overheated: false, thrusting: false, braking: false, shield: false }; 
+        meteors = [];
+        document.getElementById('lander-stats').style.display = 'block'; 
+        document.getElementById('alt').innerText = "BİLİNMİYOR";
+        document.getElementById('speed').innerText = "IŞIK HIZI";
+        document.getElementById('wind-dir').innerText = "DİKKAT METEOR!";
+        document.getElementById('wind-dir').style.color = "#f33";
+        document.getElementById('primary-label').innerText = "Yakıt Seviyesi:";
+        document.getElementById('secondary-container').style.display = 'none';
+        document.getElementById('controls-text').innerHTML = `<span class="key">MOUSE/DOKUN</span> Sağa Sola Kaç`;
+    }
+
+    function initLander() {
+        fuel = 200; heat = 0;
+        document.getElementById('lander-stats').style.display = 'block';
+        document.getElementById('primary-label').innerText = "Yakıt:";
+        document.getElementById('secondary-label').innerText = "Isı:";
+        document.getElementById('secondary-label').style.color = '#fff';
+        document.getElementById('controls-text').innerHTML = `<span class="key">SPACE/TIK</span> İtici &nbsp; <span class="key">SHIFT/SAĞ TIK</span> Fren<br>⚠️ Max Hız: ${cfg.maxSpd.toFixed(1)} m/s`;
+        lander = { x: canvas.width / 2, y: 50, vx: (Math.random() - 0.5) * 1.5, vy: 0, w: 44, h: 44, overheated: false, braking: false, thrusting: false };
+        pad = { w: cfg.padW, h: 15, baseX: canvas.width / 2 - cfg.padW/2, x: canvas.width / 2 - cfg.padW/2, y: canvas.height - 50 };
+        windForce = 0;
+    }
+
+    function initAstro() {
+        fuel = 100; 
+        document.getElementById('lander-stats').style.display = 'none';
+        document.getElementById('secondary-container').style.display = 'none';
+        document.getElementById('primary-label').innerText = "Jetpack Enerjisi:";
+        document.getElementById('controls-text').innerHTML = `<span class="key">A/D</span> Koş &nbsp; <span class="key">SPACE</span> Zıpla &nbsp; <span class="key">SHIFT</span> AKA Dash / Kayma`;
+        document.getElementById('speed-hud').style.display = 'block';
+        document.getElementById('combo-hud').style.display = 'block';
+
+        astro = { 
+            x: 150, y: canvas.height - 100, 
+            vx: 0, vy: 0, 
+            w: 22, h: 44, 
+            speed: 3.5,          
+            runSpeed: 6.0,       
+            accel: 0.45,         
+            friction: 0.82,      
+            airFriction: 0.92,   
+            jumpForce: -8.5,     
+            doubleJumpForce: -9.0, 
+            grounded: false, 
+            jumpCount: 0,        
+            frame: 0, 
+            facingRight: true, 
+            dashCooldown: 0, 
+            isDashing: false,
+            isSliding: false,
+            dashTimer: 0,
+            wasGrounded: false,
+            comboKill: 0,        
+            runHold: 0,
+            winAnim: false,
+            winTimer: null
+        };
+        
+        let gY = canvas.height - 50;
+        flagPole = {x: 14500, y: gY - 300}; 
+        
+        craters = [ 
+            {x: 600, w: 200, d: 80}, {x: 1800, w: 250, d: 90}, {x: 3200, w: 400, d: 150},
+            {x: 5500, w: 350, d: 100}, {x: 7000, w: 200, d: 80}, {x: 8500, w: 500, d: 180},
+            {x: 10000, w: 300, d: 100}, {x: 11500, w: 600, d: 200}, {x: 13000, w: 400, d: 120}
+        ];
+        platforms = [
+            {x: 950,  y: gY-120, w: 200, h: 20}, {x: 1250, y: gY-220, w: 150, h: 20},
+            {x: 1600, y: gY-160, w: 180, h: 20}, {x: 2200, y: gY-100, w: 250, h: 20}, 
+            {x: 2600, y: gY-190, w: 150, h: 20}, {x: 2900, y: gY-100, w: 200, h: 20},
+            {x: 3600, y: gY-150, w: 200, h: 20}, {x: 4000, y: gY-250, w: 150, h: 20},
+            {x: 4400, y: gY-160, w: 200, h: 20}, {x: 5000, y: gY-150, w: 200, h: 20},
+            {x: 5800, y: gY-200, w: 150, h: 20}, {x: 6500, y: gY-100, w: 250, h: 20},
+            {x: 7500, y: gY-180, w: 200, h: 20}, {x: 8800, y: gY-150, w: 250, h: 20},
+            {x: 9600, y: gY-220, w: 180, h: 20}, {x: 10500, y: gY-130, w: 200, h: 20},
+            {x: 11200, y: gY-250, w: 150, h: 20}, {x: 12200, y: gY-180, w: 300, h: 20},
+            {x: 13500, y: gY-120, w: 200, h: 20}
+        ];
+        
+        enemies = [
+            { type: 'drone', x: 1100, y: gY-220, baseY: gY-220, sX: 1100, range: 200, phase: 0, angle: Math.PI/2, alertTimer: 0, alive: true },
+            { type: 'drone', x: 3400, y: gY-250, baseY: gY-250, sX: 3400, range: 250, phase: Math.PI, angle: Math.PI/2, alertTimer: 0, alive: true },
+            { type: 'drone', x: 5200, y: gY-200, baseY: gY-200, sX: 5200, range: 300, phase: 0, angle: Math.PI/2, alertTimer: 0, alive: true },
+            { type: 'drone', x: 7800, y: gY-280, baseY: gY-280, sX: 7800, range: 200, phase: Math.PI/2, angle: Math.PI/2, alertTimer: 0, alive: true },
+            { type: 'drone', x: 10800, y: gY-230, baseY: gY-230, sX: 10800, range: 350, phase: 0, angle: Math.PI/2, alertTimer: 0, alive: true },
+            { type: 'drone', x: 12800, y: gY-260, baseY: gY-260, sX: 12800, range: 250, phase: Math.PI, angle: Math.PI/2, alertTimer: 0, alive: true },
+            
+            { type: 'rover', x: 2300, y: gY-20, vx: -1.5, minX: 2200, maxX: 2600, alive: true },
+            { type: 'rover', x: 4200, y: gY-20, vx: 2, minX: 4000, maxX: 4500, alive: true },
+            { type: 'rover', x: 6600, y: gY-120, vx: -1.8, minX: 6500, maxX: 6750, alive: true },
+            { type: 'rover', x: 8600, y: gY-20, vx: 2.2, minX: 8300, maxX: 8800, alive: true },
+            { type: 'rover', x: 10200, y: gY-20, vx: -2, minX: 9900, maxX: 10400, alive: true },
+            { type: 'rover', x: 12300, y: gY-200, vx: 1.5, minX: 12200, maxX: 12500, alive: true },
+
+            { type: 'trap', x: 1850, y: gY, phase: Math.random()*Math.PI*2, alive: true },
+            { type: 'trap', x: 5600, y: gY, phase: Math.random()*Math.PI*2, alive: true },
+            { type: 'trap', x: 11650, y: gY, phase: Math.random()*Math.PI*2, alive: true }
+        ];
+        camera.x = 0; bgOffset = 0;
+    }
+
+    function initDrill() {
+        drillProgress = 0; heat = 0; combo = 1; indicatorX = 0; 
+        indicatorDir = 0.8;           
+        zoneConfig.width = 40;        
+        zoneConfig.start = 27;
+        document.getElementById('lander-stats').style.display = 'none';
+        document.getElementById('primary-label').innerText = "Batarya:";
+        document.getElementById('secondary-label').innerText = "Matkap Isısı:";
+        document.getElementById('secondary-label').style.color = "#fff";
+        document.getElementById('drill-ui').style.display = 'block';
+        document.getElementById('controls-text').innerHTML = `<span class="key">👆/SPACE</span> Yeşil alanda bas → COMBO YAP!`;
+        fuel = 100; 
+        updateZone('drill');
+        
+        setTimeout(() => {
+            showAlperMessage("Kaptanım, bu T-12 minerali Ay üssümüz için paha biçilemez! Lütfen extraction protokolüne uyun ve TUA üssüne numune gönderin.", 6000);
+        }, 1000);
+    }
+
+    function initSignal() {
+        drillProgress = 0; fuel = 100; 
+        signalY = 150; signalVy = 0; signalFrame = 0;
+        document.getElementById('drill-ui').style.display = 'none';
+        document.getElementById('secondary-container').style.display = 'none';
+        document.getElementById('lander-stats').style.display = 'none';
+        document.getElementById('primary-label').innerText = "Sinyal Gücü:";
+        document.getElementById('controls-text').innerHTML = `<span class="key">SPACE BASILI TUT</span> Sinyali tünelde tut!`;
+    }
+
+    function createAsteroidPoints(vertexCount, size) {
+        let points = [];
+        for(let i=0; i<vertexCount; i++) {
+            let angle = (i / vertexCount) * Math.PI * 2;
+            let radius = size * (0.6 + Math.random() * 0.6); 
+            points.push({ x: Math.cos(angle)*radius, y: Math.sin(angle)*radius });
+        }
+        return points;
+    }
+
+    function createParticles(x, y, vx, vy, color, size, lifeDecay = 0.03) {
+        particles.push({ x, y, vx, vy, color, size, life: 1.0, lifeDecay });
+    }
+
+    function createFloatingText(text, x, y, color="#0f0") {
+        let el = document.createElement('div');
+        el.className = 'floating-text';
+        el.innerText = text;
+        el.style.left = x + 'px'; el.style.top = y + 'px';
+        el.style.color = color;
+        el.style.textShadow = `0 0 10px ${color}`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 1000);
+    }
+
+    function screenShake() {
+        uiPanel.style.transform = `translate(${Math.random()*10-5}px, ${Math.random()*10-5}px)`;
+        setTimeout(() => uiPanel.style.transform = 'translate(0,0)', 60);
+    }
+
+    function update() {
+        if (state !== 'playing') return;
+        if (cfg.type === 'launch') updateLaunch();
+        else if (cfg.type === 'evade') updateEvade(); 
+        else if (cfg.type === 'lander') updateLander();
+        else if (cfg.type === 'astro') updateAstro();
+        else if (cfg.type === 'drill') updateDrill();
+        else if (cfg.type === 'signal') updateSignal();
+    }
+
+    const LAUNCH_GROUND = 0;         
+    const ATMOSPHERE_END = -15000;    
+    const SPACE_START = -10000;       
+
+    function updateLaunch() {
+        let diffX = targetX - lander.x;
+        lander.vx += diffX * 0.0003; 
+        lander.vx *= 0.95; 
+
+        lander.thrusting = (isMouseDown || keys['Space'] || keys['KeyW'] || keys['ArrowUp']) && fuel > 0 && !lander.overheated;
+
+        let timeScale = 1.0;
+        let activeSat = null;
+        for(let u of milliUydular) {
+            if(Math.abs(launchWorldY - u.worldY) < 600) {
+                timeScale = 0.35; 
+                document.getElementById('wind-dir').innerText = "UYDU GÖRÜŞÜ";
+                document.getElementById('wind-dir').style.color = "#ffaa00";
+                activeSat = u;
+                break;
+            }
+        }
+
+        if (activeSat && !activeSat.triggered) {
+            showAlperMessage(activeSat.info, 4000);
+            activeSat.triggered = true;
+        }
+
+        if (lander.thrusting) {
+            lander.vy -= cfg.thrust * timeScale; fuel -= cfg.fuelBurn * timeScale; heat += 0.5 * timeScale;
+            for(let p=0; p<5; p++) {
+                createParticles(lander.x + (Math.random()-0.5)*20, lander.screenY + lander.h/2 + 8, lander.vx * 0.5 + (Math.random()-0.5)*2, Math.random()*6+4, rocketPrim, Math.random()*5+3);
+            }
+            if(heat >= 100) { 
+                heat = 100; lander.overheated = true; lander.thrusting = false; 
+                document.getElementById('secondary-label').innerText = "Isı: KİLİTLENDİ";
+                document.getElementById('secondary-label').style.color = "#f33";
+            }
+        } else {
+            heat -= 0.8 * timeScale; 
+            if(heat <= 0) { heat = 0; lander.overheated = false; document.getElementById('secondary-label').style.color = "#fff"; }
+        }
+
+        let debrisRate = launchWorldY > -1000 ? 0.15 : 0.10;
+        if(Math.random(0.5) < debrisRate * timeScale) {
+            launchDebris.push({ 
+                x: Math.random()*canvas.width, 
+                worldY: launchWorldY - canvas.height * 0.3 + Math.random()*200 - 400,
+                vy: Math.random()*3 + 2, 
+                vx: (Math.random()-0.5)*2,
+                size: Math.random()*15 + 10,
+                rot: Math.random()*Math.PI*2,
+                type: Math.floor(Math.random()*3), 
+                isSpace: launchWorldY < SPACE_START
+            });
+        }
+
+        for(let i=launchDebris.length-1; i>=0; i--) {
+            let d = launchDebris[i];
+            d.worldY += d.vy * timeScale; d.x += d.vx * timeScale;
+            let screenY = worldToScreenY(d.worldY);
+            if(Math.hypot(lander.x - d.x, lander.screenY - screenY) < d.size + 15) {
+                lander.vx += (Math.random() - 0.5) * 6;
+                heat += 15;
+                launchDebris.splice(i, 1);
+                screenShake();
+                flash.style.background = 'rgba(255,100,0,0.4)'; flash.style.opacity = '1'; setTimeout(() => flash.style.opacity='0', 60);
+                if(timeScale === 1.0) { document.getElementById('wind-dir').innerText = "ÇÖP TEMASI!"; document.getElementById('wind-dir').style.color = '#f33'; }
+            } else if (screenY > canvas.height + 80) {
+                launchDebris.splice(i, 1);
+            }
+        }
+
+        lander.vy += cfg.grav * timeScale;
+        lander.x += lander.vx * timeScale;
+        launchWorldY += lander.vy * timeScale; 
+
+        let targetScreenY = canvas.height * 0.65;
+        lander.screenY = targetScreenY;
+        launchCameraY = launchWorldY - (targetScreenY - canvas.height); 
+
+        if (launchWorldY >= LAUNCH_GROUND) {
+            launchWorldY = LAUNCH_GROUND;
+            lander.screenY = canvas.height - 100;
+            if(lander.vy > 2) handleGameOver("Çakıldın! İtişi dengeli kullan.");
+            lander.vy = 0;
+        }
+
+        if(lander.x < 0) { lander.x = 0; lander.vx *= -0.5; }
+        if(lander.x > canvas.width) { lander.x = canvas.width; lander.vx *= -0.5; }
+
+        alt = Math.abs(Math.min(0, launchWorldY)) * 8;
+        document.getElementById('alt').innerText = alt.toFixed(0) + " m";
+        document.getElementById('speed').innerText = (Math.abs(lander.vy) * 10).toFixed(1) + " m/s";
+        document.getElementById('primary-bar').style.width = (Math.max(0, fuel) / 8) + '%'; 
+        document.getElementById('secondary-bar').style.width = Math.max(0, heat) + '%';
+
+        if(timeScale === 1.0) {
+            if(launchWorldY < SPACE_START) {
+                document.getElementById('wind-dir').innerText = "UZAY BOŞLUĞU";
+                document.getElementById('wind-dir').style.color = '#0ff';
+            } else if (launchWorldY < -4000) {
+                document.getElementById('wind-dir').innerText = "STRATOSFER";
+                document.getElementById('wind-dir').style.color = '#0fa';
+            } else if (launchWorldY < -1500) {
+                document.getElementById('wind-dir').innerText = "ATMOSFERİK GEÇİŞ";
+                document.getElementById('wind-dir').style.color = '#fa0';
+            } else if (launchDebris.length === 0) {
+                document.getElementById('wind-dir').innerText = "STABİL";
+                document.getElementById('wind-dir').style.color = '#0fa';
+            }
+        }
+
+        if (launchWorldY <= ATMOSPHERE_END) {
+            let pts = Math.floor(Math.max(0, fuel));
+            handleWin(`Atmosfer aşıldı! Yörüngeye giriliyor.<br><span style="color:#0fa;">Kazanılan Yakıt Puanı: ${pts}</span>`, pts);
+        }
+    }
+
+    function worldToScreenY(worldY) {
+        return worldY - launchWorldY + lander.screenY;
+    }
+
+    function updateEvade() {
+        let diffX = targetX - lander.x;
+        lander.vx += diffX * 0.002; 
+        lander.vx *= 0.85; 
+        lander.x += lander.vx;
+        
+        if(lander.x < 20) { lander.x = 20; lander.vx = 0; }
+        if(lander.x > canvas.width - 20) { lander.x = canvas.width - 20; lander.vx = 0; }
+
+        if(Math.random() < 0.15) {
+            let s = Math.random()*15+10;
+            meteors.push({ 
+                x: Math.random()*canvas.width, y: -50, 
+                vy: Math.random()*6+4, vx: (Math.random()-0.5)*2, 
+                size: s, 
+                points: createAsteroidPoints(7, s), 
+                rot: Math.random()*Math.PI*2, rotSpeed: (Math.random()-0.5)*0.1 
+            });
+        }
+        
+        if(Math.random() < 0.01) {
+            powerups.push({ x: Math.random()*canvas.width, y: -50, vy: 4, rot: 0 });
+        }
+        
+        fuel -= 0.05; 
+        
+        for(let i=powerups.length-1; i>=0; i--) {
+            let p = powerups[i]; p.y += p.vy; p.rot += 0.1;
+            if(Math.hypot(lander.x - p.x, lander.y - p.y) < 30) {
+                lander.shield = true; 
+                createFloatingText("KALKAN AKTİF!", p.x, p.y, '#0fa');
+                powerups.splice(i, 1);
+            } else if (p.y > canvas.height) { powerups.splice(i,1); }
+        }
+        
+        for(let i=meteors.length-1; i>=0; i--) {
+            let m = meteors[i]; m.y += m.vy; m.x += m.vx;
+            if(Math.hypot(lander.x - m.x, lander.y - m.y) < m.size + 15) {
+                if (lander.shield) {
+                    lander.shield = false; 
+                    meteors.splice(i, 1); 
+                    createFloatingText("KALKAN KIRILDI!", lander.x, lander.y, '#0ff');
+                    flash.style.background = 'rgba(0,255,255,0.4)'; flash.style.opacity = '1'; setTimeout(() => flash.style.opacity='0', 50);
+                    screenShake();
+                } else {
+                    return handleGameOver("Gövdeye kocaman asteroit çarptı! Kalkanlar çöktü.");
+                }
+            }
+        }
+        
+        document.getElementById('primary-bar').style.width = Math.max(0, fuel) + '%';
+        if(fuel <= 0) {
+            let pts = Math.floor(Math.random() * 50) + 150;
+            handleWin(`Asteroit kuşağından başarıyla çıkıldı, gemi sağlam!<br><span style="color:#0fa;">Manevra Puanı: ${pts}</span>`, pts);
+        }
+    }
+
+    function updateLander() {
+        if(cfg.wind > 0 && Math.random() < 0.05) windForce += (Math.random() - 0.5) * 0.01;
+        windForce = Math.max(-cfg.wind, Math.min(cfg.wind, windForce));
+        lander.vx += windForce;
+        
+        document.getElementById('wind-dir').innerText = windForce > 0.01 ? "SAĞA RÜZGAR" : (windForce < -0.01 ? "SOLA RÜZGAR" : "STABİL");
+        document.getElementById('wind-dir').style.color = Math.abs(windForce) > 0.02 ? '#f33' : '#0fa';
+
+        let diffX = targetX - lander.x;
+        lander.vx += diffX * 0.0003; 
+        lander.vx *= 0.95; 
+
+        lander.thrusting = (isMouseDown || keys['Space'] || keys['KeyW'] || keys['ArrowUp']) && fuel > 0 && !lander.overheated;
+        lander.braking = (isRightMouseDown || keys['ShiftLeft'] || keys['KeyS'] || keys['ArrowDown']) && fuel > 0 && !lander.overheated; 
+
+        if (lander.braking) {
+            lander.vx *= 0.94; lander.vy *= 0.94; fuel -= cfg.fuelBurn * 2.5; heat += 1.2;
+            createParticles(lander.x + 25, lander.y - 10, 2, Math.random()*-2, '#00ffff', Math.random()*3+2);
+            createParticles(lander.x - 25, lander.y - 10, -2, Math.random()*-2, '#00ffff', Math.random()*3+2);
+        }
+
+        if (lander.thrusting && !lander.braking) {
+            lander.vy -= cfg.thrust; fuel -= cfg.fuelBurn; heat += 0.8;
+            createParticles(lander.x + (Math.random()-0.5)*10, lander.y + lander.h/2, lander.vx * 0.5, Math.random()*3+2, rocketPrim, Math.random()*3+2);
+        }
+
+        if (lander.thrusting || lander.braking) {
+            if(heat >= 100) { 
+                heat = 100; lander.overheated = true; lander.thrusting = false; lander.braking = false;
+                document.getElementById('secondary-label').innerText = "Isı: KİLİTLENDİ";
+                document.getElementById('secondary-label').style.color = "#f33";
+            }
+        } else {
+            heat -= 0.6; 
+            if(heat <= 0) { heat = 0; lander.overheated = false; document.getElementById('secondary-label').style.color = "#fff"; }
+        }
+
+        if(cfg.padSpd > 0) pad.x = pad.baseX + Math.sin(Date.now() / 1500 * cfg.padSpd) * (canvas.width / 4);
+
+        if(Math.random() < cfg.metRate) {
+            let s = Math.random()*5+3;
+            meteors.push({ 
+                x: Math.random()*canvas.width, y: -20, 
+                vx: (Math.random()-0.5)*3, vy: Math.random()*3+2, 
+                size: s, 
+                points: createAsteroidPoints(6, s), 
+                rot: Math.random()*Math.PI*2, rotSpeed: (Math.random()-0.5)*0.1 
+            });
+        }
+
+        for(let i=meteors.length-1; i>=0; i--) {
+            let m = meteors[i]; m.x += m.vx; m.y += m.vy;
+            if(Math.hypot(lander.x - m.x, lander.y - m.y) < 22) {
+                lander.vx += m.vx * 0.5; lander.vy += m.vy * 0.5; 
+                meteors.splice(i,1); screenShake();
+                flash.style.background = 'rgba(255,0,0,0.3)'; flash.style.opacity = '1'; setTimeout(() => flash.style.opacity='0', 50);
+            } else if (m.y > canvas.height) { meteors.splice(i,1); }
+        }
+
+        lander.vy += cfg.grav;
+        lander.x += lander.vx; lander.y += lander.vy;
+        
+        if(lander.x < 0) { lander.x = 0; lander.vx *= -0.5; }
+        if(lander.x > canvas.width) { lander.x = canvas.width; lander.vx *= -0.5; }
+
+        let distToPad = pad.y - (lander.y + lander.h/2);
+        alt = Math.max(0, Math.floor(distToPad * 2.5));
+        
+        if(alt < 500) uiPanel.classList.add('danger-panel'); else uiPanel.classList.remove('danger-panel');
+
+        document.getElementById('alt').innerText = alt + " m";
+        document.getElementById('speed').innerText = (lander.vy * 10).toFixed(1) + " m/s";
+        document.getElementById('primary-bar').style.width = (Math.max(0, fuel) / 2) + '%'; 
+        document.getElementById('secondary-bar').style.width = Math.max(0, heat) + '%';
+
+        if (lander.y + lander.h/2 >= pad.y) {
+            let speedScore = lander.vy * 10;
+            let isLanded = Math.abs((pad.x + pad.w/2) - lander.x) <= pad.w/2;
+            if (!isLanded || speedScore > cfg.maxSpd) {
+                handleGameOver(`Araç parçalandı!<br>İniş hızı: ${speedScore.toFixed(1)} m/s (Max: ${cfg.maxSpd.toFixed(1)})`);
+            } else {
+                let centerDist = Math.abs((pad.x + pad.w/2) - lander.x);
+                let accuracy = Math.max(0, 100 - (centerDist / (pad.w/2)) * 100);
+                let landingScore = (accuracy * 0.6) + ((cfg.maxSpd - Math.max(0, speedScore)) / cfg.maxSpd * 40);
+                landingScore += Math.max(0, fuel);
+                
+                let stars = landingScore >= 120 ? "⭐⭐⭐" : landingScore >= 80 ? "⭐⭐" : "⭐";
+                let resultMsg = `Mükemmel İniş!<br><br>
+                    <span style="color:#0fa;">İniş Hızı: ${speedScore.toFixed(1)} m/s</span><br>
+                    <span style="color:#0ff;">Merkez Hassasiyeti: %${accuracy.toFixed(0)}</span><br><br>
+                    <span style="font-size:22px; color:#fa0;">KAZANILAN PUAN: ${landingScore.toFixed(0)}</span><br>
+                    <div class="star-rating">${stars}</div>`;
+                handleWin(resultMsg, landingScore);
+            }
+        }
+    }
+
+    function updateAstro() {
+        let zeminY = canvas.height - 50 - 22;
+
+        if (!astro.winAnim) {
+            if (astro.x >= flagPole.x - 20 && astro.y < zeminY) { 
+                astro.winAnim = true; 
+                astro.vx = 0; 
+                astro.vy = 0;
+                astro.x = flagPole.x - 10; 
+            }
+        } else {
+            if (astro.y < zeminY) {
+                astro.vy = 3.5; 
+                astro.y += astro.vy;
+                astro.frame++; 
+                createParticles(astro.x + 10, astro.y + 10, (Math.random()-0.5)*2, -Math.random()*2, '#fff', Math.random()*3+1);
+            } else {
+                astro.y = zeminY;
+                astro.vy = 0;
+                astro.x += 2; 
+                astro.frame++;
+                if(astro.x > flagPole.x + 120 && !astro.winTimer) {
+                    astro.winTimer = setTimeout(() => {
+                        let pts = Math.floor(Math.max(0, fuel) * 2) + 200; 
+                        handleWin(`Şanlı Türk Bayrağı Ay Yüzeyine dikildi!<br><span style="color:#0fa;">Keşif Puanı: ${pts}</span>`, pts);
+                    }, 1000);
+                }
+            }
+            camera.x += ((flagPole.x - canvas.width * 0.5) - camera.x) * 0.05; 
+            bgOffset = camera.x * 0.18;
+            return;
+        }
+
+        astro.frame++;
+        astro.wasGrounded = astro.grounded;
+
+        if(astro.dashCooldown > 0) astro.dashCooldown--;
+        fuel = Math.min(100, fuel + 0.12);
+
+        let maxCurrentSpeed = astro.speed;
+
+        if (astro.isDashing) {
+            astro.vx = astro.facingRight ? 18 : -18; 
+            if (astro.isSliding) {
+                astro.vy = 0; 
+            } else {
+                astro.vy = 1.0; 
+            }
+            astro.dashTimer--;
+            
+            for(let i=0;i<3;i++) createParticles(
+                astro.x + (astro.facingRight ? -15 : 15), astro.y + (astro.isSliding ? 10 : 0), 
+                (Math.random()-0.5)*3, (Math.random()-0.5)*2, '#0ff', 4+Math.random()*3, 0.07
+            );
+            
+            if (astro.dashTimer <= 0) { 
+                astro.isDashing = false; 
+                astro.isSliding = false; 
+                astro.vx *= 0.4; 
+            }
+        } else {
+            let moveInput = 0;
+            if (keys['KeyA'] || keys['ArrowLeft'])  { moveInput = -1; astro.facingRight = false; }
+            if (keys['KeyD'] || keys['ArrowRight'])  { moveInput = 1;  astro.facingRight = true; }
+
+            let isRunning = keys['ShiftLeft'] || keys['ShiftRight'] || isRightMouseDown;
+            if(isRunning && moveInput !== 0) {
+                astro.runHold = Math.min(astro.runHold + 1, 60);
+            } else {
+                astro.runHold = Math.max(0, astro.runHold - 3);
+            }
+            maxCurrentSpeed = astro.speed + (astro.runSpeed - astro.speed) * (astro.runHold / 60);
+
+            let accel = astro.grounded ? astro.accel : astro.accel * 0.7;
+            if (moveInput !== 0) {
+                astro.vx += moveInput * accel;
+            } else {
+                astro.vx *= astro.grounded ? astro.friction : astro.airFriction;
+            }
+            astro.vx = Math.max(-maxCurrentSpeed, Math.min(maxCurrentSpeed, astro.vx));
+
+            astro.vy += astro.grounded ? 0.3 : 0.28;
+            if ((keys['Space'] || keys['KeyW'] || keys['ArrowUp'] || isMouseDown) && astro.jumpCount < 2) {
+                if (!astro._jumpHeld) {
+                    astro._jumpHeld = true;
+                    if (astro.jumpCount === 0 && fuel > 5) {
+                        astro.vy = astro.jumpForce;
+                        astro.jumpCount = 1;
+                        astro.grounded = false;
+                        fuel -= 5;
+                        createFloatingText("↑ ZIPLAMA", canvas.width*0.3 + 80, astro.screenY || astro.y - 30, '#0fa');
+                        for(let i=0;i<8;i++) createParticles(astro.x+(Math.random()-0.5)*20, astro.y+20, (Math.random()-0.5)*4, Math.random()*3+2, '#0fa', 4+Math.random()*3, 0.05);
+                    } else if (astro.jumpCount === 1 && fuel > 12) {
+                        astro.vy = astro.doubleJumpForce;
+                        astro.jumpCount = 2;
+                        fuel -= 12;
+                        createFloatingText("✦ ÇİFT ZIPLAMA!", canvas.width*0.3 + 40, (astro.y || 200) - 50, '#ff0');
+                        for(let i=0;i<12;i++) createParticles(astro.x+(Math.random()-0.5)*20, astro.y+22, (Math.random()-0.5)*5, Math.random()*4+3, '#ffaa00', 5+Math.random()*3, 0.05);
+                        screenShake();
+                    }
+                }
+            } else {
+                astro._jumpHeld = false;
+                if(astro.vy < -2) astro.vy += 0.25;
+            }
+        }
+
+        if ((keys['ShiftLeft'] || keys['ShiftRight'] || isRightMouseDown) && !astro.isDashing && astro.dashCooldown === 0 && fuel >= 18) {
+            if(!astro._dashKeyHeld) {
+                astro._dashKeyHeld = true;
+                fuel -= 18;
+                astro.isDashing = true;
+                astro.isSliding = astro.grounded; 
+                astro.dashTimer = 15; 
+                astro.dashCooldown = 60; 
+                screenShake();
+                createFloatingText(astro.isSliding ? "⚡ KAYMA!" : "⚡ AKA DASH!", canvas.width*0.3 + 60, (astro.y||200) - 40, '#0ff');
+            }
+        }
+        if (!(keys['ShiftLeft'] || keys['ShiftRight'] || isRightMouseDown)) astro._dashKeyHeld = false;
+
+        astro.x += astro.vx;
+        astro.y += astro.vy;
+
+        if(astro.x < 10) { astro.x = 10; astro.vx = 0; }
+        if(astro.y > canvas.height + 200) { return handleGameOver("Karanlık boşluğa düştün!"); }
+
+        let targetCamX = astro.x - canvas.width * 0.28;
+        camera.x += (targetCamX - camera.x) * 0.08;
+        bgOffset = camera.x * 0.18;
+
+        let groundY = canvas.height - 50;
+        astro.grounded = false;
+
+        for(let p of platforms) {
+            let ax = astro.x, ay = astro.y;
+            let hitY = astro.isSliding ? ay + 12 : ay + 22; 
+            if (ax > p.x - 10 && ax < p.x + p.w + 10 && hitY >= p.y && hitY <= p.y + 28 && astro.vy >= 0) {
+                astro.y = astro.isSliding ? p.y - 12 : p.y - 22; 
+                astro.vy = 0; astro.grounded = true; astro.jumpCount = 0;
+            }
+        }
+
+        if (!astro.grounded) {
+            let inCrater = false;
+            let hitY = astro.isSliding ? astro.y + 12 : astro.y + 22;
+            for(let c of craters) {
+                if(astro.x > c.x + 10 && astro.x < c.x + c.w - 10) {
+                    inCrater = true;
+                    if(hitY >= groundY + c.d - 15) return handleGameOver("Sivri Ay kayalıklarına çarptın!");
+                    break;
+                }
+            }
+            if (!inCrater && hitY >= groundY) {
+                astro.y = astro.isSliding ? groundY - 12 : groundY - 22; 
+                astro.vy = 0; astro.grounded = true; astro.jumpCount = 0;
+            }
+        }
+
+        for(let e of enemies) {
+            if(!e.alive) continue;
+            
+            if (e.type === 'drone') {
+                e.phase += 0.04; 
+                e.y = e.baseY + Math.sin(e.phase) * 25;
+
+                let dx = astro.x - e.x;
+                let dy = astro.y - e.y;
+                let dist = Math.hypot(dx, dy);
+                let angleToPlayer = Math.atan2(dy, dx) - Math.PI/2; 
+                
+                let targetAngle = Math.sin(e.phase * 0.8) * 0.6; 
+                if (dist < 400 && dy > 0) {
+                    targetAngle = angleToPlayer; 
+                }
+                
+                e.angle += (targetAngle - e.angle) * 0.1;
+                
+                let inScanner = dy > 0 && dist < 350 && Math.abs(angleToPlayer - e.angle) < 0.3;
+
+                if(inScanner) {
+                    e.alertTimer += 1; 
+                    e.alerted = true;
+                    if(e.alertTimer > 90) { 
+                        return handleGameOver("Dron kilitlendi ve lazerle vurdu!");
+                    }
+                } else {
+                    e.alertTimer = Math.max(0, e.alertTimer - 2); 
+                    e.alerted = e.alertTimer > 0;
+                    e.x += Math.sin(e.phase * 0.3) * 1.5; 
+                }
+
+                if(dist < 28 && astro.vy > 1 && astro.y < e.y) {
+                    e.alive = false;
+                    astro.vy = -6; 
+                    astro.comboKill++;
+                    totalScore += 50 * astro.comboKill; 
+                    let pts = astro.comboKill * 100;
+                    createFloatingText(`+${pts} EZME COMBO!`, astro.x - camera.x, astro.y - 60, '#fa0');
+                    for(let i=0;i<12;i++) createParticles(e.x, e.y, (Math.random()-0.5)*6, (Math.random()-0.5)*6, '#f33', 5+Math.random()*4, 0.04);
+                    document.getElementById('astro-combo-display').innerText = `x${astro.comboKill+1}`;
+                    screenShake();
+                } else if (dist < 26) {
+                    return handleGameOver("Dron teması! Sistem çöktü.");
+                }
+            } 
+            else if (e.type === 'rover') {
+                e.x += e.vx;
+                if(e.x < e.minX) { e.x = e.minX; e.vx = Math.abs(e.vx); }
+                if(e.x > e.maxX) { e.x = e.maxX; e.vx = -Math.abs(e.vx); }
+                
+                let dx = astro.x - e.x;
+                let dy = astro.y - e.y;
+                let dist = Math.hypot(dx, dy);
+                
+                if (dist < 30) {
+                    if (astro.isSliding) {
+                        e.alive = false;
+                        astro.comboKill++;
+                        totalScore += 100 * astro.comboKill; 
+                        createFloatingText(`SLIDE KILL! COMBO x${astro.comboKill}`, astro.x - camera.x, astro.y - 60, '#0ff');
+                        for(let i=0;i<15;i++) createParticles(e.x, e.y, (Math.random()-0.5)*8, (Math.random()-0.5)*8, '#0ff', 4+Math.random()*3, 0.05);
+                        document.getElementById('astro-combo-display').innerText = `x${astro.comboKill+1}`;
+                        screenShake();
+                    }
+                    else if (astro.vy > 0 && dy < -10) { 
+                        e.alive = false;
+                        astro.vy = -7;
+                        astro.comboKill++;
+                        totalScore += 75 * astro.comboKill; 
+                        createFloatingText(`PARÇALANDI! COMBO x${astro.comboKill}`, astro.x - camera.x, astro.y - 60, '#fa0');
+                        for(let i=0;i<10;i++) createParticles(e.x, e.y, (Math.random()-0.5)*5, (Math.random()-0.5)*5, '#888', 4+Math.random()*3, 0.05);
+                        document.getElementById('astro-combo-display').innerText = `x${astro.comboKill+1}`;
+                        screenShake();
+                    } else {
+                        return handleGameOver("Gezgin robota çarptın!");
+                    }
+                }
+            }
+            else if (e.type === 'trap') {
+                e.phase += 0.03;
+                let extension = Math.max(0, Math.sin(e.phase) * 50); 
+                if (extension > 10) {
+                    if (astro.x > e.x - 15 && astro.x < e.x + 45 && astro.y > e.y - extension && astro.y < e.y + 10) {
+                        return handleGameOver("TUA-Savunma Kapanına yakalandın!");
+                    }
+                }
+            }
+        }
+
+        if(astro.grounded && !astro.wasGrounded) {
+            if(astro.comboKill > 0) {
+                createFloatingText(`COMBO x${astro.comboKill} BİTTİ`, canvas.width * 0.4, 200, '#fa0');
+                astro.comboKill = 0;
+                document.getElementById('astro-combo-display').innerText = 'x1';
+            }
+        }
+
+        let currentSpd = Math.abs(astro.vx).toFixed(1);
+        document.getElementById('astro-speed-val').innerText = currentSpd;
+        let dashCharge = Math.max(0, 100 - (astro.dashCooldown / 60 * 100));
+        document.getElementById('dash-fill-bar').style.width = dashCharge + '%';
+        document.getElementById('primary-bar').style.width = fuel + '%';
+    }
+
+    let spacePressed = false;
+    function updateDrill() {
+        fuel -= 0.035; 
+        if (fuel <= 0) return handleGameOver("Batarya bitti, matkap durdu.");
+        
+        indicatorX += indicatorDir; 
+        if(indicatorX > 100 || indicatorX < 0) indicatorDir *= -1;
+        
+        let inGreen = indicatorX >= zoneConfig.start && indicatorX <= zoneConfig.start + zoneConfig.width;
+
+        if ((keys['Space'] || isMouseDown) && !spacePressed) {
+            spacePressed = true;
+            if(inGreen) {
+                combo++; 
+                drillProgress += 1.5 * Math.min(combo * 0.4, 3);
+                heat = Math.max(0, heat - 4);
+                fuel = Math.min(100, fuel + 5); 
+                createFloatingText("MÜKEMMEL! x" + combo, canvas.width/2 + (Math.random()*80-40), canvas.height/2 - 100);
+                
+                indicatorDir *= 1.08; 
+                zoneConfig.width = Math.max(8, zoneConfig.width - 2.5); 
+                updateZone('drill');
+            } else {
+                combo = 1; heat += 5; screenShake();
+                indicatorDir = (indicatorDir > 0 ? 1 : -1) * Math.max(0.5, Math.abs(indicatorDir) * 0.85);
+                zoneConfig.width = 45; 
+                zoneConfig.start = Math.max(5, Math.min(50, zoneConfig.start + (Math.random()-0.5)*20));
+                updateZone('drill');
+                flash.style.background = 'rgba(255,0,0,0.2)'; flash.style.opacity = '1'; setTimeout(() => flash.style.opacity='0', 50);
+            }
+        } else if (!(keys['Space'] || isMouseDown)) { spacePressed = false; }
+
+        heat -= 0.08; if(heat < 0) heat = 0;
+        document.getElementById('drill-indicator').style.left = indicatorX + '%';
+        document.getElementById('combo-text').innerText = combo;
+        document.getElementById('drill-percent').innerText = Math.floor(drillProgress) + '%';
+        document.getElementById('primary-bar').style.width = fuel + '%';
+        document.getElementById('secondary-bar').style.width = heat + '%';
+
+        if(heat >= 100) handleGameOver("Matkap aşırı ısındı ve eridi!");
+        if(drillProgress >= 100) {
+            let pts = Math.floor(Math.max(0, fuel) * 3) + 300; 
+            handleWin(`Ay madeni başarıyla çıkarıldı!<br><span style="color:#0fa;">Maden Puanı: ${pts}</span>`, pts);
+        }
+    }
+
+    function updateSignal() {
+        signalFrame++;
+        
+        if (keys['Space'] || isMouseDown) {
+            signalVy -= 0.25; 
+        } else {
+            signalVy += 0.15; 
+        }
+        signalVy = Math.max(-2.5, Math.min(2.5, signalVy)); 
+        signalY += signalVy;
+
+        let difficulty = 1 + (drillProgress / 200); 
+        let tunnelCenter = 150 + Math.sin(signalFrame * 0.02 * difficulty) * 50; 
+        let tunnelHeight = 180 - (drillProgress * 0.3); 
+        
+        let topWall = tunnelCenter - tunnelHeight/2;
+        let bottomWall = tunnelCenter + tunnelHeight/2;
+
+        if (signalY < topWall || signalY > bottomWall) {
+            fuel -= 0.2; 
+            screenShake();
+            sctx.fillStyle = 'rgba(255,0,0,0.3)'; sctx.fillRect(0,0,scvs.width,scvs.height);
+            document.getElementById('primary-label').innerText = "SİNYAL BOZULUYOR!";
+            document.getElementById('primary-label').style.color = "#f33";
+        } else {
+            drillProgress += 0.25; 
+            document.getElementById('primary-label').innerText = "VERİ AKTARILIYOR...";
+            document.getElementById('primary-label').style.color = "#0fa";
+        }
+
+        if(signalY < 0) signalY = 0;
+        if(signalY > 300) signalY = 300;
+
+        document.getElementById('primary-bar').style.width = fuel + '%';
+
+        if (fuel <= 0) handleGameOver("Frekans kaybedildi. Sinyal koptu!");
+        if (drillProgress >= 100) {
+            document.getElementById('signal-overlay').style.display = 'none';
+            let pts = Math.floor(Math.max(0, fuel) * 5) + 500; 
+            handleWin(`TUA ile %100 bağlantı sağlandı! Tüm veriler Ankara'ya ulaştı.<br><span style="color:#0fa;">İletişim Puanı: ${pts}</span>`, pts);
+        }
+        
+        sctx.fillStyle = 'rgba(0,5,15,0.3)'; 
+        sctx.fillRect(0,0,scvs.width, scvs.height);
+        
+        sctx.fillStyle = 'rgba(0, 255, 255, 0.1)';
+        sctx.fillRect(600, topWall, 200, tunnelHeight);
+        sctx.strokeStyle = '#0fa'; sctx.lineWidth = 2;
+        sctx.beginPath(); sctx.moveTo(600, topWall); sctx.lineTo(800, topWall); sctx.stroke();
+        sctx.beginPath(); sctx.moveTo(600, bottomWall); sctx.lineTo(800, bottomWall); sctx.stroke();
+        
+        sctx.drawImage(scvs, -3, 0); 
+        
+        sctx.fillStyle = '#fff';
+        sctx.shadowBlur = 10; sctx.shadowColor = '#fff';
+        sctx.beginPath(); sctx.arc(780, signalY, 4, 0, Math.PI*2); sctx.fill();
+        sctx.shadowBlur = 0;
+        
+        sctx.fillStyle = '#333'; sctx.fillRect(20, 20, 200, 10);
+        sctx.fillStyle = '#0fa'; sctx.fillRect(20, 20, drillProgress*2, 10);
+    }
+
+    function updateZone(type) {
+        let el = document.getElementById(`${type}-zone`);
+        el.style.left = zoneConfig.start + '%';
+        el.style.width = zoneConfig.width + '%';
+    }
+
+    function sendScoreToWebsite(player, base, finalScore) {
+        console.log(`[LEADERBOARD] Firebase'e Gönderiliyor: İsim: ${player}, Üs: ${base}, Puan: ${finalScore}`);
+        db.collection('scores').add({
+            playerName: player,
+            baseName: base,
+            score: Math.floor(finalScore),
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            console.log('[LEADERBOARD] Skor başarıyla kaydedildi!');
+        }).catch((err) => {
+            console.error('[LEADERBOARD] Skor kaydedilemedi:', err);
+        });
+    }
+
+    function openLeaderboard() {
+        document.getElementById('lb-modal').classList.add('show');
+        loadLeaderboard();
+    }
+    function closeLeaderboard() {
+        document.getElementById('lb-modal').classList.remove('show');
+    }
+    function loadLeaderboard() {
+        let list = document.getElementById('lb-list');
+        list.innerHTML = '<div class="lb-empty">Yükleniyor...</div>';
+        db.collection('scores').orderBy('score', 'desc').limit(20).get().then((snap) => {
+            if (snap.empty) {
+                list.innerHTML = '<div class="lb-empty">Henüz skor yok. İlk sen ol!</div>';
+                return;
+            }
+            let html = '';
+            let rank = 1;
+            snap.forEach((doc) => {
+                let d = doc.data();
+                let cls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+                let medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                html += `<div class="lb-row ${cls}">`;
+                html += `<div class="lb-rank">${medal}</div>`;
+                html += `<div class="lb-info"><div class="lb-name">${d.playerName || 'Anonim'}</div><div class="lb-base">${d.baseName || ''}</div></div>`;
+                html += `<div class="lb-score">${d.score}</div>`;
+                html += `</div>`;
+                rank++;
+            });
+            list.innerHTML = html;
+        }).catch((err) => {
+            list.innerHTML = '<div class="lb-empty">Bağlantı hatası. Tekrar deneyin.</div>';
+            console.error(err);
+        });
+    }
+
+    function handleGameOver(reason) {
+        state = 'ended'; 
+        uiPanel.classList.remove('visible'); 
+        mobileControls.classList.remove('visible');
+        document.getElementById('signal-overlay').style.display = 'none';
+        isMouseDown = false; isRightMouseDown = false;
+        document.getElementById('speed-hud').style.display = 'none';
+        document.getElementById('combo-hud').style.display = 'none';
+        
+        let btn = document.getElementById('action-btn');
+        btn.innerText = "Tekrar Dene"; 
+        
+        let msg = document.getElementById('msg-text');
+        document.getElementById('message').style.display = 'block';
+        msg.innerHTML = `<span style='color:#f33; font-size:28px;'>GÖREV BAŞARISIZ</span><br><br>${reason}`;
+    }
+
+    function handleWin(reason, pointsEarned = 0) {
+        state = 'ended'; 
+        uiPanel.classList.remove('visible'); 
+        mobileControls.classList.remove('visible');
+        document.getElementById('signal-overlay').style.display = 'none';
+        isMouseDown = false; isRightMouseDown = false;
+        document.getElementById('speed-hud').style.display = 'none';
+        document.getElementById('combo-hud').style.display = 'none';
+        
+        if (!scoreAccumulated && pointsEarned > 0) {
+            totalScore += Math.floor(pointsEarned);
+            scoreAccumulated = true;
+        }
+
+        let msg = document.getElementById('msg-text');
+        let btn = document.getElementById('action-btn');
+        let scoreUI = document.getElementById('score-display');
+        let scoreVal = document.getElementById('total-score-val');
+
+        if (currentLevel < maxLevel) {
+            msg.innerHTML = `<span style='color:#0fa; font-size:28px;'>AŞAMA GEÇİLDİ</span><br><br>${reason}`;
+            btn.innerText = "Devam Et"; 
+            scoreUI.style.display = 'block';
+            scoreVal.innerText = totalScore;
+        } else {
+            msg.innerHTML = `<span style='color:#0ff; font-size:34px; text-shadow:0 0 20px #0ff;'>HACKATHON TAMAMLANDI!</span><br><br>${reason}<br><br><span style='color:#fa0; font-size:16px;'>Sincapowski Takımı TUA Tarihine Geçti!</span>`;
+            btn.innerText = "Başa Dön"; 
+            scoreUI.style.display = 'block';
+            scoreVal.innerText = totalScore;
+            
+            sendScoreToWebsite(playerName, selectedBaseName, totalScore);
+        }
+        
+        document.getElementById('message').style.display = 'block';
+    }
+
+    // YENİ: Koda işlenmiş daha kaliteli çöp çizimleri
+    function drawDebris(d) {
+        ctx.save();
+        ctx.translate(d.x, worldToScreenY(d.worldY));
+        ctx.rotate(d.rot);
+        
+        if (d.type === 0) { 
+            ctx.fillStyle = '#113366';
+            ctx.fillRect(-d.size, -d.size/2, d.size*2, d.size);
+            ctx.strokeStyle = '#88ccff'; ctx.lineWidth=1;
+            ctx.strokeRect(-d.size, -d.size/2, d.size*2, d.size);
+            ctx.beginPath(); ctx.moveTo(0, -d.size/2); ctx.lineTo(0, d.size/2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(-d.size, 0); ctx.lineTo(d.size, 0); ctx.stroke();
+            ctx.fillStyle = '#010103'; 
+            ctx.beginPath(); ctx.arc(d.size, -d.size/2, d.size/1.5, 0, Math.PI*2); ctx.fill();
+        } else if (d.type === 1) { 
+            ctx.fillStyle = '#666';
+            ctx.beginPath(); 
+            ctx.moveTo(-d.size, -d.size); 
+            ctx.quadraticCurveTo(d.size, -d.size/2, d.size/2, d.size); 
+            ctx.lineTo(-d.size/2, d.size/2); 
+            ctx.fill();
+            ctx.fillStyle = '#444'; 
+            ctx.beginPath(); ctx.arc(0,0, d.size/3, 0, Math.PI*2); ctx.fill();
+        } else { 
+            ctx.fillStyle = '#888';
+            ctx.fillRect(-d.size/4, -d.size, d.size/2, d.size*2);
+            ctx.fillStyle = '#f33';
+            ctx.fillRect(-d.size/4, -d.size, d.size/2, d.size/4);
+            ctx.strokeStyle = '#fff'; ctx.beginPath(); ctx.moveTo(0, d.size); ctx.lineTo(d.size, d.size*1.5); ctx.stroke();
+        }
+        
+        ctx.restore();
+        d.rot += 0.02;
+    }
+
+    function drawAsteroid(m) {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.rotate(m.rot);
+
+        ctx.fillStyle = '#696969';
+        ctx.strokeStyle = '#222';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        if(m.points && m.points.length > 0) {
+            ctx.moveTo(m.points[0].x, m.points[0].y);
+            for(let i=1; i<m.points.length; i++) {
+                ctx.lineTo(m.points[i].x, m.points[i].y);
+            }
+        } else {
+            ctx.arc(0, 0, m.size, 0, Math.PI*2);
+        }
+        
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#4a4a4a';
+        ctx.beginPath(); ctx.arc(-m.size/3, -m.size/4, m.size/4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(m.size/4, m.size/3, m.size/5, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+        
+        m.rot += m.rotSpeed;
+    }
+
+    function drawPowerup(p) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        
+        ctx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+        ctx.beginPath(); ctx.arc(0, 0, 15, 0, Math.PI*2); ctx.fill();
+        
+        ctx.fillStyle = '#0fa';
+        ctx.shadowBlur = 10; ctx.shadowColor = '#0fa';
+        ctx.fillRect(-3, -10, 6, 20); 
+        ctx.fillRect(-10, -3, 20, 6); 
+        
+        ctx.restore();
+    }
+
+    // YENİ: Tek Bir Render Fonksiyonu (Hem oyun içi hem garaj için)
+    function renderRocketGraphics(rCtx, shapeStr, cBodyBase, cSecBase, overheated, thrusting, braking) {
+        let cBody = overheated ? '#ff3333' : cBodyBase;
+        let cSec = overheated ? '#a00' : cSecBase;
+
+        if (lander && lander.shield && state === 'playing') {
+            rCtx.beginPath();
+            rCtx.arc(0, 0, 35, 0, Math.PI*2);
+            rCtx.fillStyle = 'rgba(0, 255, 255, 0.2)';
+            rCtx.fill();
+            rCtx.lineWidth = 2;
+            rCtx.strokeStyle = 'rgba(0, 255, 255, 0.8)';
+            rCtx.stroke();
+        }
+
+        if(braking) {
+            rCtx.shadowBlur = 15; rCtx.shadowColor = '#0ff'; rCtx.fillStyle = '#0ff';
+            rCtx.beginPath(); rCtx.arc(-22, -10, 8 + Math.random()*6, 0, Math.PI*2); rCtx.fill();
+            rCtx.beginPath(); rCtx.arc(22, -10, 8 + Math.random()*6, 0, Math.PI*2); rCtx.fill();
+            rCtx.shadowBlur = 0;
+        }
+        if(thrusting && !braking) { 
+            rCtx.shadowBlur = 20; rCtx.shadowColor = cBodyBase; rCtx.fillStyle = cBodyBase; 
+            rCtx.beginPath(); rCtx.moveTo(-6, 22); rCtx.lineTo(6, 22); rCtx.lineTo(0, 22 + Math.random()*25 + 15); rCtx.fill(); 
+            rCtx.shadowBlur = 0;
+        }
+        
+        rCtx.beginPath(); 
+        if (shapeStr === "0") { // Klasik
+            rCtx.fillStyle = cBody; rCtx.fillRect(-22, 0, 44, 18);
+            rCtx.fillStyle = cSec; rCtx.fillRect(-14, 2, 28, 14); 
+            rCtx.fillStyle = '#e0f7fa'; rCtx.beginPath(); rCtx.moveTo(-16, 0); rCtx.lineTo(-10, -18); rCtx.lineTo(10, -18); rCtx.lineTo(16, 0); rCtx.fill();
+            rCtx.strokeStyle = '#aaa'; rCtx.lineWidth = 3; rCtx.beginPath(); rCtx.moveTo(-22, 12); rCtx.lineTo(-35, 25); rCtx.moveTo(22, 12); rCtx.lineTo(35, 25); rCtx.stroke();
+            rCtx.fillStyle = '#888'; rCtx.fillRect(-40, 25, 10, 4); rCtx.fillRect(30, 25, 10, 4);
+        } else if (shapeStr === "1") { // Sleek
+            rCtx.fillStyle = cBody;
+            rCtx.beginPath(); rCtx.moveTo(0, -28); rCtx.quadraticCurveTo(10, -10, 15, 15); rCtx.lineTo(-15, 15); rCtx.quadraticCurveTo(-10, -10, 0, -28); rCtx.fill();
+            rCtx.fillStyle = '#0ff'; 
+            rCtx.beginPath(); rCtx.moveTo(0, -15); rCtx.quadraticCurveTo(5, -5, 4, 5); rCtx.lineTo(-4, 5); rCtx.quadraticCurveTo(-5, -5, 0, -15); rCtx.fill();
+            rCtx.fillStyle = cSec; 
+            rCtx.beginPath(); rCtx.moveTo(12, 5); rCtx.quadraticCurveTo(25, 15, 20, 22); rCtx.lineTo(15, 15); rCtx.fill();
+            rCtx.beginPath(); rCtx.moveTo(-12, 5); rCtx.quadraticCurveTo(-25, 15, -20, 22); rCtx.lineTo(-15, 15); rCtx.fill();
+            rCtx.fillStyle = '#888'; rCtx.fillRect(-10, 15, 6, 4); rCtx.fillRect(4, 15, 6, 4);
+        } else { // Ağır
+            rCtx.fillStyle = cBody; rCtx.fillRect(-25, -5, 50, 25);
+            rCtx.fillStyle = cSec; rCtx.fillRect(-30, 5, 10, 15); rCtx.fillRect(20, 5, 10, 15);
+            rCtx.fillStyle = '#e0f7fa'; rCtx.fillRect(-15, -15, 30, 10);
+            rCtx.fillStyle = '#888'; rCtx.fillRect(-30, 20, 10, 6); rCtx.fillRect(20, 20, 10, 6);
+        }
+
+        rCtx.fillStyle = '#010103'; rCtx.beginPath(); rCtx.arc(0, -8, 6, 0, Math.PI*2); rCtx.fill();
+        rCtx.fillStyle = '#00ffff'; rCtx.beginPath(); rCtx.arc(-2, -10, 2, 0, Math.PI*2); rCtx.fill();
+    }
+
+    function drawRocket(thrustColor1, thrustColor2) {
+        let x = lander.x;
+        let y = (cfg.type === 'launch' || cfg.type === 'evade') ? lander.screenY || lander.y : lander.y;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(lander.vx * 0.10); 
+        renderRocketGraphics(ctx, rocketShape, rocketPrim, rocketSec, lander.overheated, (lander.thrusting && !lander.braking), lander.braking);
+        ctx.restore();
+    }
+
+    function drawAnimatedAstronaut(a) {
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        if (!a.facingRight) ctx.scale(-1, 1);
+        
+        let legAngle1 = 0, legAngle2 = 0, armAngle1 = 0, armAngle2 = 0, bodyTilt = 0;
+        
+        if (a.winAnim) {
+            armAngle1 = -Math.PI/1.2; armAngle2 = -Math.PI/1.2;
+            legAngle1 = 0; legAngle2 = 0;
+            bodyTilt = 0;
+        } else if (a.isSliding) {
+            bodyTilt = Math.PI / 2.5; 
+            armAngle1 = Math.PI / 4; armAngle2 = Math.PI / 4; 
+            legAngle1 = -Math.PI / 2.5; legAngle2 = Math.PI / 4; 
+            ctx.translate(0, 10); 
+            
+            ctx.shadowBlur = 12; ctx.shadowColor = '#0fa'; ctx.fillStyle = '#0fa';
+            ctx.beginPath(); ctx.arc(-10, 5, 7 + Math.random()*4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        } else if (a.isDashing) {
+            bodyTilt = Math.PI / 4; 
+            armAngle1 = -Math.PI / 2.5; armAngle2 = -Math.PI / 2.5;
+            legAngle1 = Math.PI / 6; legAngle2 = -Math.PI / 6;
+            ctx.shadowBlur = 12; ctx.shadowColor = '#0fa'; ctx.fillStyle = '#0fa';
+            ctx.beginPath(); ctx.arc(-18, -5, 7 + Math.random()*4, 0, Math.PI*2); ctx.fill(); ctx.shadowBlur = 0;
+        } else if (!a.grounded) {
+            bodyTilt = Math.PI / 14;
+            legAngle1 = -Math.PI / 10; legAngle2 = Math.PI / 10;
+            armAngle1 = Math.PI / 5; armAngle2 = -Math.PI / 5;
+        } else if (Math.abs(a.vx) > 0.5) {
+            let speedRatio = Math.min(Math.abs(a.vx) / a.runSpeed, 1);
+            let cycle = a.frame * 0.2 * speedRatio;
+            
+            bodyTilt = Math.sin(cycle * 2) * 0.05 * speedRatio + 0.1; 
+            legAngle1 = Math.sin(cycle) * 0.7 * speedRatio;
+            legAngle2 = Math.sin(cycle + Math.PI) * 0.7 * speedRatio;
+            armAngle1 = Math.sin(cycle + Math.PI) * 0.6 * speedRatio;
+            armAngle2 = Math.sin(cycle) * 0.6 * speedRatio;
+        } else {
+            bodyTilt = Math.sin(a.frame * 0.05) * 0.02;
+            armAngle1 = Math.sin(a.frame * 0.05) * 0.05 + 0.1;
+            armAngle2 = -Math.sin(a.frame * 0.05) * 0.05 - 0.1;
+            legAngle1 = 0.05; legAngle2 = -0.05;
+        }
+
+        let bounce = (Math.abs(a.vx) > 0.5 && a.grounded && !a.isSliding) ? Math.abs(Math.sin(a.frame * 0.2 * Math.min(Math.abs(a.vx)/a.runSpeed, 1))) * -2 : 0;
+        ctx.translate(0, bounce);
+        ctx.rotate(bodyTilt);
+
+        ctx.strokeStyle = '#e0f7fa'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+        ctx.strokeStyle = '#80b4b8';
+        ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(Math.sin(armAngle2)*13, -5+Math.cos(armAngle2)*13); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, 8); ctx.lineTo(Math.sin(legAngle2)*13, 8+Math.cos(legAngle2)*13); ctx.stroke();
+
+        ctx.fillStyle = '#444'; ctx.fillRect(-12, -10, 6, 16); 
+        
+        ctx.fillStyle = '#e0f7fa';
+        ctx.fillRect(-6, -10, 12, 20); 
+
+        ctx.beginPath(); ctx.moveTo(0, 8); ctx.lineTo(Math.sin(legAngle1)*13, 8+Math.cos(legAngle1)*13); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(Math.sin(armAngle1)*13, -5+Math.cos(armAngle1)*13); ctx.stroke();
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(0, -17, 9, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#0ff'; 
+        ctx.beginPath(); ctx.arc(3, -17, 5, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawLaunchScene() {
+        let progress = Math.min(1, Math.abs(launchWorldY) / Math.abs(ATMOSPHERE_END));
+        
+        let skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        skyGrad.addColorStop(0, `rgb(${Math.floor(1 * progress*100)}, ${Math.floor(3 * progress*100 / 3)}, ${Math.floor(3 * progress*100 / 3)})`);
+
+        let r1 = Math.floor(0), g1 = Math.floor(17 * (1-progress)), b1 = Math.floor(51 * (1-progress));
+        let r2 = Math.floor(0), g2 = Math.floor(51 * (1-progress)), b2 = Math.floor(153 * (1-progress) + 10);
+        skyGrad.addColorStop(0, `rgb(${r1},${g1},${b1})`);
+        skyGrad.addColorStop(1, `rgb(${r2},${g2},${b2})`);
+        ctx.fillStyle = skyGrad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        if(progress > 0.3) {
+            ctx.fillStyle = `rgba(255,255,255,${(progress - 0.3) * 1.4})`;
+            launchStars.forEach(s => {
+                let sz = Math.abs(Math.sin(s.t + Date.now() * 0.001)) * 0.5 + 0.5;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r * sz, 0, Math.PI*2); ctx.fill();
+            });
+        }
+
+        let groundScreenY = worldToScreenY(0);
+        if(groundScreenY > 0 && groundScreenY < canvas.height) {
+            ctx.fillStyle = '#111'; ctx.fillRect(0, groundScreenY, canvas.width, canvas.height - groundScreenY);
+            ctx.fillStyle = '#333'; ctx.fillRect(0, groundScreenY, canvas.width, 4);
+            ctx.fillStyle = '#222'; ctx.fillRect(canvas.width/2 - 80, groundScreenY - 120, 160, 120);
+            ctx.fillStyle = '#444'; ctx.fillRect(canvas.width/2 - 40, groundScreenY - 180, 80, 60);
+            ctx.fillStyle = '#cc0000'; ctx.fillRect(canvas.width/2 - 40, groundScreenY - 180, 80, 25);
+            ctx.fillStyle = '#444'; ctx.fillRect(canvas.width/2 - 140, groundScreenY - 250, 18, 250);
+            ctx.fillStyle = '#e30a17'; ctx.fillRect(canvas.width/2 - 148, groundScreenY - 260, 30, 18);
+            ctx.fillStyle = '#fff'; ctx.fillRect(canvas.width/2 - 148, groundScreenY - 255, 30, 8);
+            ctx.fillStyle = '#222'; ctx.fillRect(canvas.width/2 - 150, groundScreenY - 4, 300, 8);
+            ctx.fillStyle = '#0ff'; ctx.font = "16px Rajdhani"; ctx.fillText(selectedBaseName, canvas.width/2 - 130, groundScreenY + 24);
+        }
+
+        launchDebris.forEach(d => { drawDebris(d); });
+
+        let slowMoActive = false;
+        let activeSat = null;
+
+        milliUydular.forEach(u => {
+            let sy = worldToScreenY(u.worldY);
+            if(sy > -150 && sy < canvas.height + 150) {
+                let merkezeUzaklik = Math.abs(sy - (canvas.height / 2));
+                let zoom = 1 + Math.max(0, (500 - merkezeUzaklik) / 500) * 1.5; 
+                if (merkezeUzaklik < 400) { slowMoActive = true; activeSat = u; }
+                
+                ctx.save();
+                ctx.translate(u.x, sy);
+                ctx.scale(zoom, zoom); 
+                
+                ctx.shadowBlur = 20; ctx.shadowColor = u.renk;
+                
+                ctx.fillStyle = '#0a3366'; ctx.fillRect(-35, -8, 25, 16); ctx.fillRect(10, -8, 25, 16);
+                ctx.strokeStyle = '#0ff'; ctx.lineWidth = 1; ctx.strokeRect(-35, -8, 25, 16); ctx.strokeRect(10, -8, 25, 16);
+                ctx.fillStyle = '#ddd'; ctx.fillRect(-10, -12, 20, 24);
+                ctx.fillStyle = '#e30a17'; ctx.fillRect(-10, 0, 20, 5);
+                
+                ctx.shadowBlur = 0; 
+                ctx.fillStyle = u.renk; ctx.font = "bold 14px Orbitron"; ctx.textAlign = "center";
+                ctx.fillText("🛰️ " + u.ad, 0, -20);
+                
+                ctx.restore();
+            }
+        });
+
+        if(slowMoActive && activeSat) {
+            let grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 100, canvas.width/2, canvas.height/2, canvas.width);
+            grad.addColorStop(0, 'rgba(0,0,0,0)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.6)');
+            ctx.fillStyle = grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+        }
+
+        drawRocket(rocketPrim, '#ff3300');
+
+        let atmoPct = Math.floor(progress * 100);
+        ctx.fillStyle = 'rgba(0,20,40,0.7)'; ctx.fillRect(canvas.width - 220, 20, 200, 80);
+        ctx.strokeStyle = 'rgba(0,255,255,0.3)'; ctx.lineWidth=1; ctx.strokeRect(canvas.width-220, 20, 200, 80);
+        ctx.fillStyle = '#0ff'; ctx.font = "13px Rajdhani"; ctx.fillText("ATMOSFERİK GEÇİŞ", canvas.width - 210, 40);
+        ctx.fillStyle = '#fa0'; ctx.font = "bold 22px Orbitron";
+        ctx.fillText(`%${atmoPct}`, canvas.width - 210, 70);
+        ctx.fillStyle = '#111'; ctx.fillRect(canvas.width-210, 75, 180, 8);
+        let progColor = progress < 0.5 ? '#0fa' : progress < 0.8 ? '#fa0' : '#0ff';
+        ctx.fillStyle = progColor; ctx.fillRect(canvas.width-210, 75, 180 * progress, 8);
+    }
+
+    function drawEvade() {
+        ctx.fillStyle = '#010103'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        for(let i=0; i<30; i++) ctx.fillRect(Math.random()*canvas.width, Math.random()*canvas.height, 1, Math.random()*15+5);
+
+        powerups.forEach(p => drawPowerup(p));
+        meteors.forEach(m => drawAsteroid(m));
+
+        lander.thrusting = true; 
+        drawRocket(rocketPrim, '#0ff');
+    }
+
+    function draw() {
+        if(cfg.type === 'signal') return; 
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (cfg.type === 'launch') {
+            drawLaunchScene();
+        } else if (cfg.type === 'evade') { 
+            drawEvade();
+        } else if (cfg.type === 'lander') {
+            ctx.fillStyle = '#0a0f15'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            launchStars.forEach(s => {
+                let sz = Math.abs(Math.sin(s.t + Date.now() * 0.001)) * 0.5 + 0.5;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r * sz, 0, Math.PI*2); ctx.fill();
+            });
+
+            ctx.fillStyle = 'rgba(10, 60, 150, 0.4)';
+            ctx.beginPath(); ctx.arc(canvas.width * 0.2, 150, 100, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'rgba(150, 200, 255, 0.2)';
+            ctx.beginPath(); ctx.arc(canvas.width * 0.2 + 20, 130, 80, 0, Math.PI*2); ctx.fill();
+
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height);
+            ctx.lineTo(0, pad.y);
+            for(let i=0; i<canvas.width; i+=40) {
+                if (i > pad.x - 20 && i < pad.x + pad.w + 20) {
+                    ctx.lineTo(i, pad.y); 
+                } else {
+                    ctx.lineTo(i, pad.y + Math.random()*20 + 10); 
+                }
+            }
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.fill();
+
+            ctx.fillStyle = '#111'; ctx.fillRect(pad.x, pad.y, pad.w, pad.h);
+            ctx.fillStyle = '#0fa'; ctx.fillRect(pad.x + pad.w/2 - 10, pad.y, 20, pad.h);
+            ctx.strokeStyle = '#0fa'; ctx.lineWidth = 2; ctx.strokeRect(pad.x, pad.y, pad.w, pad.h);
+            
+            meteors.forEach(m => drawAsteroid(m));
+            drawRocket(rocketPrim, '#00ffff'); 
+
+        } else if (cfg.type === 'astro') {
+            ctx.fillStyle = '#010103'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            launchStars.forEach(s => {
+                let sz = Math.abs(Math.sin(s.t + Date.now() * 0.001)) * 0.5 + 0.5;
+                let sX = (s.x - camera.x * 0.05) % canvas.width;
+                if(sX < 0) sX += canvas.width;
+                ctx.beginPath(); ctx.arc(sX, s.y, s.r * sz, 0, Math.PI*2); ctx.fill();
+            });
+
+            ctx.fillStyle = 'rgba(20, 80, 180, 0.6)';
+            ctx.beginPath(); ctx.arc(canvas.width * 0.5 - camera.x * 0.02, 200, 150, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'rgba(150, 200, 255, 0.3)';
+            ctx.beginPath(); ctx.arc(canvas.width * 0.5 - camera.x * 0.02 + 30, 160, 120, 0, Math.PI*2); ctx.fill();
+
+            ctx.save(); ctx.translate(-camera.x, 0); 
+            let gY = canvas.height - 50;
+
+            ctx.fillStyle = '#444'; 
+            ctx.beginPath(); ctx.moveTo(0, gY);
+            for (let c of craters) { 
+                ctx.lineTo(c.x, gY); 
+                ctx.lineTo(c.x+5, gY+c.d); 
+                ctx.lineTo(c.x+c.w/2, gY+c.d - 20); 
+                ctx.lineTo(c.x+c.w-5, gY+c.d); 
+                ctx.lineTo(c.x+c.w, gY); 
+            }
+            ctx.lineTo(16000, gY); ctx.lineTo(16000, canvas.height); ctx.lineTo(0, canvas.height); ctx.fill();
+            ctx.strokeStyle = '#222'; ctx.lineWidth = 3; ctx.stroke();
+            
+            ctx.fillStyle = '#111';
+            for (let c of craters) {
+                ctx.beginPath();
+                ctx.moveTo(c.x+5, gY+c.d);
+                ctx.lineTo(c.x+c.w/2, gY+c.d - 20);
+                ctx.lineTo(c.x+c.w-5, gY+c.d);
+                ctx.lineTo(c.x+c.w-5, canvas.height);
+                ctx.lineTo(c.x+5, canvas.height);
+                ctx.fill();
+            }
+
+            for (let p of platforms) {
+                let pg = ctx.createLinearGradient(p.x, p.y, p.x, p.y+p.h);
+                pg.addColorStop(0, '#555'); pg.addColorStop(1, '#333');
+                ctx.fillStyle = pg; ctx.fillRect(p.x, p.y, p.w, p.h); 
+                ctx.strokeStyle = '#222'; ctx.lineWidth = 1.5; ctx.strokeRect(p.x, p.y, p.w, p.h);
+            }
+
+            ctx.fillStyle = '#fff'; ctx.fillRect(flagPole.x, flagPole.y, 6, 300); 
+            ctx.fillStyle = '#d4af37'; ctx.beginPath(); ctx.arc(flagPole.x + 3, flagPole.y, 8, 0, Math.PI*2); ctx.fill(); 
+            
+            ctx.fillStyle = '#E30A17'; 
+            let flagWave = Math.sin(Date.now()*0.005) * 5;
+            ctx.beginPath();
+            ctx.moveTo(flagPole.x + 6, flagPole.y + 10);
+            ctx.quadraticCurveTo(flagPole.x + 40, flagPole.y + 10 + flagWave, flagPole.x + 80, flagPole.y + 10);
+            ctx.lineTo(flagPole.x + 80, flagPole.y + 60);
+            ctx.quadraticCurveTo(flagPole.x + 40, flagPole.y + 60 + flagWave, flagPole.x + 6, flagPole.y + 60);
+            ctx.fill();
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(flagPole.x + 32, flagPole.y + 35, 12, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#E30A17';
+            ctx.beginPath(); ctx.arc(flagPole.x + 36, flagPole.y + 35, 10, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.save(); ctx.translate(flagPole.x + 48, flagPole.y + 35); ctx.rotate(-Math.PI/10);
+            ctx.beginPath();
+            for(let i=0; i<5; i++) {
+                ctx.lineTo(Math.cos((18+i*72)*Math.PI/180)*5, -Math.sin((18+i*72)*Math.PI/180)*5);
+                ctx.lineTo(Math.cos((54+i*72)*Math.PI/180)*2.5, -Math.sin((54+i*72)*Math.PI/180)*2.5);
+            }
+            ctx.fill(); ctx.restore();
+
+            enemies.forEach(e => {
+                if(!e.alive) return;
+                ctx.save(); ctx.translate(e.x, e.y);
+                
+                if (e.type === 'drone') {
+                    ctx.save();
+                    ctx.rotate(e.angle); 
+                    let r = e.alertTimer > 0 ? 255 : 0;
+                    let g = e.alertTimer > 0 ? Math.max(0, 255 - (e.alertTimer * 2.8)) : 255;
+                    ctx.fillStyle = `rgba(${r}, ${g}, 255, ${e.alerted ? 0.5 : 0.15})`;
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-70, 450); ctx.lineTo(70, 450); ctx.fill();
+                    ctx.restore();
+
+                    ctx.fillStyle = '#222'; ctx.fillRect(-15, -10, 30, 10);
+                    ctx.fillStyle = '#444'; ctx.beginPath(); ctx.arc(0, -10, 15, Math.PI, 0); ctx.fill();
+                    let eyeColor = e.alerted ? '#f00' : '#0ff';
+                    ctx.fillStyle = eyeColor; ctx.beginPath(); ctx.arc(0, -5, 4, 0, Math.PI*2); ctx.fill(); 
+                    ctx.shadowBlur = 10; ctx.shadowColor = eyeColor; ctx.fill(); ctx.shadowBlur = 0;
+                } 
+                else if (e.type === 'rover') {
+                    let hoverY = Math.sin(Date.now()*0.005 + e.x)*5;
+                    ctx.translate(0, hoverY);
+                    
+                    ctx.fillStyle = '#334'; ctx.fillRect(-12, -20, 24, 15);
+                    ctx.fillStyle = '#112'; ctx.beginPath(); ctx.arc(0, -5, 8, 0, Math.PI*2); ctx.fill();
+                    
+                    ctx.fillStyle = '#0ff'; ctx.shadowBlur = 10; ctx.shadowColor = '#0ff';
+                    ctx.beginPath(); ctx.moveTo(-6, 0); ctx.lineTo(6, 0); ctx.lineTo(0, 10); ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+                else if (e.type === 'trap') {
+                    let ext = Math.max(0, Math.sin(e.phase) * 50); 
+                    ctx.fillStyle = '#222'; ctx.fillRect(-20, 0, 40, 20);
+                    ctx.translate(0, -ext);
+                    ctx.fillStyle = '#666'; ctx.fillRect(-10, 0, 20, ext); 
+                    ctx.fillStyle = '#e30a17';
+                    ctx.beginPath(); ctx.arc(0, 0, 18, Math.PI, 0); ctx.fill();
+                    ctx.fillStyle = '#fff'; 
+                    ctx.beginPath(); ctx.moveTo(-18,0); ctx.lineTo(-10,8); ctx.lineTo(-2,0); ctx.lineTo(6,8); ctx.lineTo(14,0); ctx.fill();
+                }
+                ctx.restore();
+            });
+
+            let dashRatio = astro.dashCooldown / 60;
+            ctx.globalAlpha = astro.isDashing ? 0.6 : (dashRatio > 0.7 ? 0.5 + (1-dashRatio)*0.5 : 1);
+            drawAnimatedAstronaut(astro);
+            ctx.globalAlpha = 1.0;
+            ctx.restore();
+        } else if (cfg.type === 'drill') {
+            ctx.fillStyle = '#010103'; ctx.fillRect(0, 0, canvas.width, canvas.height); 
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            launchStars.forEach(s => {
+                let sz = Math.abs(Math.sin(s.t + Date.now() * 0.001)) * 0.5 + 0.5;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.r * sz, 0, Math.PI*2); ctx.fill();
+            });
+
+            ctx.fillStyle = 'rgba(20, 80, 180, 0.6)';
+            ctx.beginPath(); ctx.arc(canvas.width * 0.8, 150, 100, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = 'rgba(150, 200, 255, 0.3)';
+            ctx.beginPath(); ctx.arc(canvas.width * 0.8 + 20, 130, 80, 0, Math.PI*2); ctx.fill();
+            
+            let cx = canvas.width / 2 + 50; 
+            let cy = canvas.height - 250;
+            let drillColor = heat > 70 ? '#f55' : heat > 40 ? '#fa0' : '#0fa';
+            let shake = spacePressed ? (Math.random()-0.5)*3 : 0;
+            let depth = drillProgress * 2.5;
+
+            ctx.fillStyle = '#1a1a1c'; ctx.fillRect(0, cy + 100, canvas.width, canvas.height);
+            ctx.fillStyle = '#2a2a2c'; ctx.fillRect(0, cy + 100, canvas.width, 10);
+            
+            ctx.fillStyle = '#050505'; 
+            ctx.beginPath();
+            ctx.moveTo(cx - 35, cy + 100);
+            ctx.lineTo(cx - 25, cy + 100 + depth + 40);
+            ctx.lineTo(cx + 25, cy + 100 + depth + 40);
+            ctx.lineTo(cx + 35, cy + 100);
+            ctx.fill();
+            
+            ctx.fillStyle = '#444';
+            for(let i=0; i<drillProgress/5; i++) {
+                ctx.fillRect(cx - 50 - Math.random()*20, cy + 100 + Math.random()*20, 10, 10);
+                ctx.fillRect(cx + 40 + Math.random()*20, cy + 100 + Math.random()*20, 10, 10);
+            }
+
+            ctx.save();
+            ctx.translate(cx + shake, cy + depth);
+            
+            ctx.fillStyle = '#ccc'; ctx.fillRect(-40, -120, 80, 120); 
+            ctx.fillStyle = '#111'; ctx.fillRect(-30, -110, 60, 100); 
+            
+            ctx.fillStyle = '#fff'; ctx.fillRect(-25, -60, 50, 30);
+            ctx.fillStyle = '#e30a17'; ctx.font = "bold 18px Orbitron"; ctx.fillText("TUA", -18, -40);
+
+            ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(-10, -90, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = '#0fa'; ctx.beginPath(); ctx.arc(15, -80, 10, 0, Math.PI*2); ctx.fill();
+
+            ctx.fillStyle = drillColor; ctx.shadowBlur = heat > 0 ? heat * 0.3 : 0; ctx.shadowColor = drillColor;
+            ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(20, 0); ctx.lineTo(0, 40); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = '#050505'; ctx.lineWidth = 3;
+            for(let i=0; i<4; i++) {
+                ctx.beginPath(); ctx.moveTo(-15 + (i*3.5), i*10); ctx.lineTo(15 - (i*3.5), i*10 + 5); ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(cx - 100, cy + 85); 
+            
+            ctx.strokeStyle = '#e0f7fa'; ctx.lineWidth = 4; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#80b4b8';
+            ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(-10, 15); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(30, -5 + shake); ctx.stroke(); 
+            
+            ctx.fillStyle = '#444'; ctx.fillRect(-12, -10, 6, 16); 
+            ctx.fillStyle = '#e0f7fa'; ctx.fillRect(-6, -10, 12, 20); ctx.strokeRect(-6, -10, 12, 20);
+            
+            ctx.strokeStyle = '#e0f7fa';
+            ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(10, 15); ctx.stroke(); 
+            ctx.beginPath(); ctx.moveTo(0, -5); ctx.lineTo(40, -5 + shake); ctx.stroke(); 
+
+            ctx.fillStyle = '#e30a17'; ctx.fillRect(35, -10 + shake, 10, 10);
+
+            ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, -17, 9, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.arc(3, -17, 5, 0, Math.PI*2); ctx.fill();
+            
+            ctx.restore();
+
+            ctx.strokeStyle = '#555'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(cx - 60, cy + 80 + shake); 
+            ctx.quadraticCurveTo(cx - 40, cy + 100, cx - 40, cy - 50 + depth + shake); 
+            ctx.stroke();
+        }
+
+        for(let i=particles.length-1; i>=0; i--) {
+            let p = particles[i]; p.x += p.vx; p.y += p.vy; p.life -= p.lifeDecay;
+            if(p.life <= 0) particles.splice(i,1);
+            else {
+                ctx.save(); 
+                if(cfg.type === 'astro') ctx.translate(-camera.x, 0);
+                ctx.fillStyle = p.color; ctx.globalAlpha = p.life; 
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+            }
+        }
+    }
+
+    let sonZaman = 0;
+    let birikenZaman = 0;
+    const SABIT_ADIM = 1000 / 60; 
+
+    function loop(zamanDamgasi) { 
+        if (!sonZaman) sonZaman = zamanDamgasi;
+        let gecenSure = zamanDamgasi - sonZaman;
+        sonZaman = zamanDamgasi;
+        
+        if (gecenSure > 100) gecenSure = 100;
+        
+        if (state === 'playing') { 
+            birikenZaman += gecenSure;
+            
+            while (birikenZaman >= SABIT_ADIM) {
+                update(); 
+                birikenZaman -= SABIT_ADIM;
+            }
+            
+            draw(); 
+        }
+        requestAnimationFrameId = requestAnimationFrame(loop); 
+    }
+    </script>
+</body>
+</html>

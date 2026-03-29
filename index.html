@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sincapowski OS | TUA Astro Hackathon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Source+Code+Pro:wght@400;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script>
+        firebase.initializeApp({
+            apiKey: "AIzaSyCyBp1-EwuaEfNzf7qT1vrsqqtf7MHXs30",
+            authDomain: "sincapowski3.firebaseapp.com",
+            projectId: "sincapowski3",
+            storageBucket: "sincapowski3.firebasestorage.app",
+            messagingSenderId: "952280842155",
+            appId: "1:952280842155:web:a13c8b9a2ee3f6da215cee"
+        });
+        const db = firebase.firestore();
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #cbd5e1;
+            overflow-x: hidden;
+        }
+
+        /* Stars */
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.8;
+            animation: twinkle 2s infinite alternate;
+        }
+        @keyframes twinkle {
+            from { opacity: 0.2; }
+            to { opacity: 1; }
+        }
+
+        .tab-content { display: none; min-height: 60vh; }
+        .tab-content.active { display: flex; flex-direction: column; animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+        .nav-link.active { color: #fff; border-bottom: 2px solid #cd8f7a; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+        }
+
+        .matrix-glow {
+            font-family: 'Source Code Pro', monospace;
+            color: #4ade80;
+            text-shadow: 0 0 15px rgba(74, 222, 128, 0.8);
+            animation: matrixPulse 2s infinite alternate ease-in-out;
+        }
+        @keyframes matrixPulse { from { opacity: 1; } to { opacity: 0.7; } }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cd8f7a; border-radius: 10px; }
+
+        .fade-up { opacity: 0; transform: translateY(30px); animation: fadeUp 0.8s forwards; }
+        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+        .quiz-card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 1rem; text-align: center; }
+        .quiz-button {
+            background: rgba(205,143,122,0.2);
+            backdrop-filter: blur(6px);
+            color: #fff; padding: 0.5rem 1rem; margin: 0.25rem;
+            border-radius: 12px; transition: 0.3s; font-size: 0.875rem;
+            border: 1px solid rgba(255,255,255,0.1); cursor: pointer;
+        }
+        .quiz-button:hover { background: rgba(205,143,122,0.5); }
+
+        /* Leaderboard Panel */
+        .lb-panel { max-height: 480px; overflow-y: auto; }
+        .lb-panel::-webkit-scrollbar { width: 4px; }
+        .lb-panel::-webkit-scrollbar-thumb { background: #cd8f7a; border-radius: 10px; }
+        .lb-title { font-family: 'Orbitron', sans-serif; font-size: 16px; color: #0ff; text-shadow: 0 0 12px rgba(0,255,255,0.6); text-align: center; margin-bottom: 4px; letter-spacing: 2px; }
+        .lb-subtitle { text-align: center; font-size: 11px; color: #94a3b8; margin-bottom: 16px; letter-spacing: 1px; }
+        .lb-row { display: flex; align-items: center; padding: 8px 10px; margin-bottom: 4px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); transition: all 0.2s; }
+        .lb-row:hover { background: rgba(0,255,255,0.06); border-color: rgba(0,255,255,0.25); transform: translateX(4px); }
+        .lb-row.gold { background: rgba(255,170,0,0.08); border-color: rgba(255,170,0,0.35); }
+        .lb-row.silver { background: rgba(192,192,192,0.06); border-color: rgba(192,192,192,0.25); }
+        .lb-row.bronze { background: rgba(205,127,50,0.06); border-color: rgba(205,127,50,0.25); }
+        .lb-rank { width: 28px; font-family: 'Orbitron', sans-serif; font-size: 13px; font-weight: bold; color: #cd8f7a; text-align: center; flex-shrink: 0; }
+        .lb-info { flex: 1; margin-left: 10px; min-width: 0; }
+        .lb-name { color: #fff; font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-base { color: #64748b; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lb-score { color: #0ff; font-family: 'Orbitron', sans-serif; font-size: 15px; text-shadow: 0 0 6px rgba(0,255,255,0.4); flex-shrink: 0; margin-left: 8px; }
+        .lb-empty { text-align: center; color: #475569; padding: 24px; font-size: 13px; }
+        .lb-loading { text-align: center; padding: 30px; }
+        .lb-loading .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0ff; margin: 0 3px; animation: lbBounce 1.2s infinite; }
+        .lb-loading .dot:nth-child(2) { animation-delay: 0.2s; }
+        .lb-loading .dot:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes lbBounce { 0%,80%,100% { transform: translateY(0); opacity: 0.4; } 40% { transform: translateY(-8px); opacity: 1; } }
+        .play-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 24px; background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(0,255,200,0.1)); border: 1px solid rgba(0,255,255,0.4); border-radius: 12px; color: #0ff; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.3s; text-decoration: none; letter-spacing: 1px; text-transform: uppercase; }
+        .play-btn:hover { background: linear-gradient(135deg, rgba(0,255,255,0.3), rgba(0,255,200,0.2)); box-shadow: 0 0 25px rgba(0,255,255,0.3); transform: translateY(-2px); }
+
+        @media (max-width: 768px) {
+            body { overflow-y: auto; }
+            .tab-content.active { padding-top: 2rem; padding-bottom: 5rem; }
+            nav { flex-direction: column; gap: 1rem; padding: 1rem; }
+            .nav-links-container { overflow-x: auto; width: 100%; justify-content: center; padding-bottom: 5px; }
+            h1 { font-size: 2.5rem !important; }
+            .lb-panel { max-height: 350px; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative">
+
+    <div id="loader" class="fixed inset-0 bg-black z-[9999] flex flex-col items-center justify-center gap-4">
+        <h1 class="matrix-glow text-xl md:text-3xl">BOOTING SINCAPOWSKI OS...</h1>
+        <div class="w-64 h-2 bg-white/10 rounded-full overflow-hidden">
+            <div class="h-full bg-[#cd8f7a] animate-pulse" style="width: 100%"></div>
+        </div>
+    </div>
+
+    <div class="stars" id="stars"></div>
+
+    <div class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex items-center gap-4 bg-black/60 backdrop-blur-md p-2 px-4 rounded-lg border border-green-400/20 shadow-[0_0_15px_rgba(0,0,0,0.5)]">
+        <div class="text-[10px] md:text-xs font-bold matrix-glow select-none tracking-[0.2em] uppercase">TUA Astro Hackathon_2026</div>
+        <div class="w-[1px] h-4 bg-green-400/30"></div>
+        <div id="digital-clock" class="text-[10px] md:text-xs font-bold font-mono text-green-400 tracking-widest shadow-green-400/20">00:00:00</div>
+    </div>
+
+    <nav class="flex items-center justify-between px-6 md:px-12 py-5 bg-black/30 backdrop-blur-md z-50 border-b border-white/5 sticky top-0">
+        <div class="flex items-center gap-4">
+            <img src="https://i.ibb.co/zhtTLCwt/Hackathon.jpg" alt="Logo" class="w-16 h-16 rounded-xl object-cover shadow-[0_0_25px_rgba(205,143,122,0.4)] border-2 border-white/20">
+            <span class="text-white font-bold tracking-tighter text-xl uppercase">Sincapowski</span>
+        </div>
+        <div class="nav-links-container flex gap-6 md:gap-10 text-[10px] md:text-xs font-semibold uppercase tracking-widest">
+            <button onclick="switchTab('vision')" id="nav-vision" class="nav-link active pb-1 transition-all whitespace-nowrap">Biz Kimiz</button>
+            <button onclick="switchTab('projects')" id="nav-projects" class="nav-link pb-1 transition-all whitespace-nowrap">Projelerimiz</button>
+            <button onclick="switchTab('project')" id="nav-project" class="nav-link pb-1 transition-all whitespace-nowrap">Kişiler</button>
+            <button onclick="switchTab('contact')" id="nav-contact" class="nav-link pb-1 transition-all whitespace-nowrap">İletişim</button>
+        </div>
+    </nav>
+
+    <main class="flex-1 flex flex-col items-center justify-center px-6 py-10">
+        <section id="vision" class="tab-content active w-full max-w-6xl fade-up">
+            <div class="grid md:grid-cols-2 gap-12 items-start">
+                <div class="space-y-6">
+                    <h1 class="text-4xl md:text-6xl font-bold text-white leading-tight">
+                         <br/> <span class="text-[#cd8f7a] italic">Sincapowski: birlikte topluyor, birlikte büyüyoruz</span>
+                    </h1>
+                    <div class="grid gap-4">
+                        <div class="glass p-6 border-l-4 border-l-[#cd8f7a]">
+                            <h3 class="text-[#cd8f7a] font-mono text-[10px] uppercase tracking-[0.3em] mb-2">Misyonumuz</h3>
+                            <p class="text-sm md:text-base text-zinc-200 font-medium">Gençlerde uzay merakı uyandırmak ve fikirleri katma değere dönüştürmektir.</p>
+                        </div>
+                        <div class="glass p-6 border-l-4 border-l-white bg-white/5">
+                            <h3 class="text-white font-mono text-[10px] uppercase tracking-[0.3em] mb-2">Vizyonumuz</h3>
+                            <p class="text-sm md:text-base text-white font-bold">Uluslararası arenada saygın bir mühendislik gücü ve inovasyon merkezi olmaktır.</p>
+                        </div>
+                    </div>
+                    <a href="game.html" class="play-btn">
+                        🚀 Oyunu Oyna
+                    </a>
+                </div>
+
+                <!-- SKOR TABLOSU -->
+                <div class="glass p-6">
+                    <div class="lb-title">🏆 SIRALAMA</div>
+                    <div class="lb-subtitle">En İyi 20 Astronot — Gerçek Zamanlı</div>
+                    <div id="home-lb-list" class="lb-panel">
+                        <div class="lb-loading"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="projects" class="tab-content w-full max-w-6xl fade-up">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-white uppercase tracking-[0.2em] italic">
+                    Projelerimiz
+                </h2>
+                <p class="text-zinc-500 text-sm mt-2">
+                    Geliştirdiğimiz İnteraktif Deneyimler
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-6 w-full">
+                <div class="glass p-6">
+                    <h3 class="text-white font-bold text-lg">🚀 Sincapowski: Ay Görevi</h3>
+                    <p class="text-sm text-zinc-400 mt-2">
+                        9 bölümlük uzay macerası! Dünya'dan kalkış, asteroit kuşağı, Ay'a iniş, yüzey keşfi, maden kazısı ve daha fazlası.
+                    </p>
+                    <a href="game.html" class="play-btn" style="margin-top: 16px;">🎮 Hemen Oyna</a>
+                </div>
+
+                <div class="glass p-6">
+                    <h3 class="text-white font-bold text-lg">Space AI Quiz</h3>
+                    <div id="quiz-container" class="mt-4"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="project" class="tab-content w-full max-w-6xl fade-up">
+            <div class="text-center mb-8">
+                <p class="matrix-glow text-center text-sm md:text-base font-bold tracking-[0.2em] uppercase mb-4">
+                    Şükrü Şankaya Anadolu Lisesi Öğrencileri
+                </p>
+                <h2 class="text-3xl font-bold text-white uppercase tracking-[0.2em] italic">Kişiler</h2>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                <div class="glass p-6 border-l-4 border-red-500 hover:shadow-lg transition-shadow">
+                    <h3 class="font-bold text-red-500">Rüzgar Deniz Şahin</h3>
+                    <p class="font-semibold text-sm text-zinc-300">Lider / Kodlamacı</p>
+                </div>
+                <div class="glass p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+                    <h3 class="font-bold text-purple-500">Aras Atıcı</h3>
+                    <p class="font-semibold text-sm text-zinc-300">PR / Denetleyici</p>
+                </div>
+                <div class="glass p-6 border-l-4 border-orange-500 hover:shadow-lg transition-shadow">
+                    <h3 class="font-bold text-orange-500">Ömer Bilgin</h3>
+                    <p class="font-semibold text-sm text-zinc-300">Tasarımcı</p>
+                </div>
+                <div class="glass p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+                    <h3 class="font-bold text-green-500">Uğur Tuna Bolaç</h3>
+                    <p class="font-semibold text-sm text-zinc-300">Araştırmacı</p>
+                </div>
+                <div class="glass p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+                    <h3 class="font-bold text-green-500">Emir Berke Şahan</h3>
+                    <p class="font-semibold text-sm text-zinc-300">Araştırmacı</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="tab-content w-full max-w-6xl fade-up">
+            <div class="text-center mb-10">
+                <h2 class="matrix-glow text-3xl md:text-4xl font-bold uppercase tracking-[0.1em] mb-4">Bize Ulaşın</h2>
+                
+                <div class="flex flex-col md:flex-row items-center justify-center gap-6 mt-8">
+                    <a href="mailto:sincapowski@gmail.com" class="glass p-6 flex items-center gap-4 hover:scale-105 transition-all duration-300 border border-white/10 hover:border-green-400/50 min-w-[280px]">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/4e/Gmail_Icon.png" alt="Gmail" class="w-8 h-8">
+                        <div class="text-left">
+                            <h3 class="text-white font-bold text-sm uppercase tracking-wider">E-Posta</h3>
+                            <p class="text-green-400 font-mono text-sm">sincapowski@gmail.com</p>
+                        </div>
+                    </a>
+
+                    <a href="https://www.instagram.com/sincapowski" target="_blank" class="glass p-6 flex items-center gap-4 hover:scale-105 transition-all duration-300 border border-white/10 hover:border-green-400/50 min-w-[280px]">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" alt="Instagram" class="w-8 h-8 filter drop-shadow-[0_0_3px_rgba(74,222,128,0.8)]">
+                        <div class="text-left">
+                            <h3 class="text-white font-bold text-sm uppercase tracking-wider">Instagram</h3>
+                            <p class="text-green-400 font-mono text-sm">@sincapowski</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Loader hızlı kaybolacak (resim beklemiyor)
+        document.addEventListener('DOMContentLoaded', () => {
+            const loader = document.getElementById('loader');
+            setTimeout(() => {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            }, 1000);
+        });
+
+        // Stars
+        const starsContainer = document.getElementById('stars');
+        const starCount = 24;
+        for(let i=0;i<starCount;i++){
+            const star = document.createElement('div');
+            star.classList.add('star');
+            star.style.top = Math.random()*100 + '%';
+            star.style.left = Math.random()*100 + '%';
+            star.style.width = star.style.height = (1 + Math.random()*2)+'px';
+            star.style.animationDuration = (1 + Math.random()*2) + 's';
+            starsContainer.appendChild(star);
+        }
+
+        // Tab switch
+        function switchTab(tabId){
+            document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(n=>n.classList.remove('active'));
+            const selectedTab = document.getElementById(tabId);
+            const selectedNav = document.getElementById('nav-'+tabId);
+            if(selectedTab) selectedTab.classList.add('active');
+            if(selectedNav) selectedNav.classList.add('active');
+            if(window.innerWidth<768) window.scrollTo({top:0, behavior:'smooth'});
+
+            // Lazy-load quiz
+            if(tabId==='projects' && !window.quizLoaded){
+                showQuestion();
+                window.quizLoaded = true;
+            }
+        }
+
+        // Digital clock
+        function updateClock(){
+            const now = new Date();
+            document.getElementById('digital-clock').textContent =
+                `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        }
+        setInterval(updateClock,1000); updateClock();
+
+        // Quiz
+        const quizContainer = document.getElementById('quiz-container');
+        let questions=[
+            { question:"Ay'ın yüzeyi neden kraterlidir?", answers:["Meteor çarpmaları nedeniyle","Rüzgar erozyonu nedeniyle","Volkanik patlamalar nedeniyle"], correct:0 },
+            { question:"Dünya'dan bakınca Ay neden her zaman aynı yüzünü gösterir?", answers:["Kendi ekseniyle senkronize dönmesi nedeniyle","Ay hızlı döndüğü için","Yerçekimi etkisiyle dönmediği için"], correct:0 },
+            { question:"Güneş Sistemi'ndeki en büyük gezegen hangisidir?", answers:["Jüpiter","Satürn","Neptün"], correct:0 },
+            { question:"Mars'ta su var mıydı?", answers:["Evet, geçmişte","Hayır, hiçbir zaman","Sadece kutup bölgelerinde"], correct:0 },
+            { question:"Ay tutulması nasıl gerçekleşir?", answers:["Dünya'nın gölgesinin Ay üzerine düşmesiyle","Ay'ın Dünya etrafında hızlı dönmesiyle","Güneş ışınlarının kırılmasıyla"], correct:0 },
+            { question:"Güneş tutulması sırasında Dünya'da neler olur?", answers:["Geçici karanlık yaşanır","Hava sıcaklığı artar","Ay parlaklaşır"], correct:0 },
+            { question:"Jüpiter'in en büyük uydusu hangisidir?", answers:["Ganymede","Io","Europa"], correct:0 },
+            { question:"Ay'da atmosfer var mı?", answers:["Hayır, yoktur","Evet, ince bir atmosfer vardır","Sadece kutuplarda atmosfer vardır"], correct:0 },
+            { question:"Satürn'ün halkaları neyden oluşur?", answers:["Buz ve kaya parçacıklarından","Gazdan","Metalik minerallerden"], correct:0 },
+            { question:"Venüs neden sıcak bir gezegendir?", answers:["Yoğun sera etkisi nedeniyle","Güneşe çok yakın olduğu için","Atmosferi çok ince olduğu için"], correct:0 }
+        ];
+
+        function shuffle(array){ for(let i=array.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [array[i], array[j]]=[array[j], array[i]]; } return array; }
+        let quizIndex=0, score=0; questions=shuffle(questions);
+
+        function showQuestion(){
+            if(quizIndex>=questions.length){
+                quizContainer.innerHTML = `<div class="quiz-card"><h3>Quiz Bitti!</h3><p>Toplam Puan: ${score} / ${questions.length}</p><button class="quiz-button" onclick="restartQuiz()">Tekrar Başlat</button></div>`;
+                return;
+            }
+            const q = questions[quizIndex];
+            const shuffledAnswers = shuffle([...q.answers]);
+            quizContainer.innerHTML = `<div class="quiz-card"><h3>Soru ${quizIndex+1}</h3><p class="mb-4 text-white">${q.question}</p>${shuffledAnswers.map(a=>`<button class="quiz-button" onclick="checkAnswer('${a.replace(/'/g,"\\'")}','${q.answers[q.correct].replace(/'/g,"\\'")}')">${a}</button>`).join('')}</div>`;
+        }
+
+        function checkAnswer(selected, correctAnswer){ if(selected===correctAnswer) score++; quizIndex++; showQuestion(); }
+        function restartQuiz(){ quizIndex=0; score=0; questions=shuffle(questions); showQuestion(); }
+
+        // FIREBASE LEADERBOARD — Real-time
+        function loadHomeLeaderboard() {
+            const list = document.getElementById('home-lb-list');
+            db.collection('scores').orderBy('score', 'desc').limit(20)
+                .onSnapshot((snap) => {
+                    if (snap.empty) {
+                        list.innerHTML = '<div class="lb-empty">Henüz skor yok.<br>İlk sen ol! 🚀</div>';
+                        return;
+                    }
+                    let html = '';
+                    let rank = 1;
+                    snap.forEach((doc) => {
+                        const d = doc.data();
+                        const cls = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+                        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+                        html += `<div class="lb-row ${cls}">`;
+                        html += `<div class="lb-rank">${medal}</div>`;
+                        html += `<div class="lb-info"><div class="lb-name">${d.playerName || 'Anonim'}</div><div class="lb-base">${d.baseName || ''}</div></div>`;
+                        html += `<div class="lb-score">${d.score}</div>`;
+                        html += `</div>`;
+                        rank++;
+                    });
+                    list.innerHTML = html;
+                }, (err) => {
+                    list.innerHTML = '<div class="lb-empty">Bağlantı hatası.</div>';
+                    console.error(err);
+                });
+        }
+        loadHomeLeaderboard();
+    </script>
+</body>
+<style>
+    /* Sincap animasyonu */
+    .sincap {
+        width: 100%;
+        height: auto;
+        animation: sway 6s ease-in-out infinite alternate, floatUpDown 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes sway {
+        0% { transform: translateX(0) rotate(-10deg); }
+        50% { transform: translateX(-15px) rotate(5deg); }
+        100% { transform: translateX(0) rotate(-10deg); }
+    }
+
+    @keyframes floatUpDown {
+        0% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0); }
+    }
+</style>
+</html>
