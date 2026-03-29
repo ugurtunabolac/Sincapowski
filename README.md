@@ -1,0 +1,1 @@
+sincapowski.netlify.app
